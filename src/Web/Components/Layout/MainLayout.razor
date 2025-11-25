@@ -1,10 +1,37 @@
 @inherits LayoutComponentBase
-@using MudBlazor
 
-<MudThemeProvider />
+<MudThemeProvider Theme="@customTheme" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
 <MudLayout>
     @Body
 </MudLayout>
+
+@code {
+    private MudTheme customTheme = new MudTheme()
+    {
+        Palette = new PaletteLight()
+        {
+            Primary = "#667eea",
+            Secondary = "#764ba2",
+            AppbarBackground = "#667eea",
+            Success = "#38ef7d",
+            Info = "#4facfe",
+            Warning = "#f5576c",
+            Error = "#f5576c"
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#667eea",
+            Secondary = "#764ba2"
+        },
+        Typography = new Typography()
+        {
+            Default = new Default()
+            {
+                FontFamily = new[] { "Roboto", "Helvetica", "Arial", "sans-serif" }
+            }
+        }
+    };
+}

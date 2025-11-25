@@ -6,62 +6,96 @@
 @inject ISnackbar Snackbar
 @layout Layout.MainLayout
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="min-height: 100vh;">
-    <MudPaper Elevation="4" Class="pa-8" Style="width: 100%; max-width: 450px;">
-        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-2">Sistema de Gestión de Incidentes</MudText>
-        <MudText Typo="Typo.body1" Align="Align.Center" Class="mb-6" Color="Color.Secondary">
-            Universidad - Laboratorios
-        </MudText>
+<MudContainer MaxWidth="MaxWidth.Large" Class="d-flex align-center justify-center" Style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <MudGrid Justify="Justify.Center" Style="width: 100%;">
+        <MudItem xs="12" sm="10" md="8" lg="6" xl="5">
+            <MudPaper Elevation="25" Class="pa-8" Style="border-radius: 16px; backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.95);">
+                
+                <div class="d-flex flex-column align-center mb-6">
+                    <MudIcon Icon="@Icons.Material.Filled.Computer" Size="Size.Large" Color="Color.Primary" Style="font-size: 4rem;" Class="mb-3" />
+                    <MudText Typo="Typo.h3" Align="Align.Center" Style="font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                        Sistema de Gestión
+                    </MudText>
+                    <MudText Typo="Typo.h5" Align="Align.Center" Color="Color.Primary" Style="font-weight: 500;">
+                        de Incidentes
+                    </MudText>
+                    <MudText Typo="Typo.body1" Align="Align.Center" Class="mt-2" Color="Color.Secondary" Style="font-weight: 400;">
+                        Universidad - Laboratorios de Computación
+                    </MudText>
+                </div>
 
-        <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
-            <DataAnnotationsValidator />
-            
-            <MudTextField @bind-Value="loginModel.Email" 
-                          Label="Correo Electrónico" 
-                          Variant="Variant.Outlined" 
-                          Class="mb-4"
-                          Required="true"
-                          RequiredError="El correo es requerido"
-                          InputType="InputType.Email" />
+                <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+                    <DataAnnotationsValidator />
+                    
+                    <MudTextField @bind-Value="loginModel.Email" 
+                                  Label="Correo Electrónico" 
+                                  Variant="Variant.Outlined" 
+                                  Class="mb-4"
+                                  Required="true"
+                                  RequiredError="El correo es requerido"
+                                  InputType="InputType.Email"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Email"
+                                  AdornmentColor="Color.Primary" />
 
-            <MudTextField @bind-Value="loginModel.Password" 
-                          Label="Contraseña" 
-                          Variant="Variant.Outlined" 
-                          Class="mb-4"
-                          Required="true"
-                          RequiredError="La contraseña es requerida"
-                          InputType="InputType.Password" />
+                    <MudTextField @bind-Value="loginModel.Password" 
+                                  Label="Contraseña" 
+                                  Variant="Variant.Outlined" 
+                                  Class="mb-6"
+                                  Required="true"
+                                  RequiredError="La contraseña es requerida"
+                                  InputType="InputType.Password"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Lock"
+                                  AdornmentColor="Color.Primary" />
 
-            <MudButton ButtonType="ButtonType.Submit" 
-                       Variant="Variant.Filled" 
-                       Color="Color.Primary" 
-                       FullWidth="true"
-                       Size="Size.Large"
-                       Disabled="@isLoading">
-                @if (isLoading)
-                {
-                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                    <MudText Class="ms-2">Iniciando sesión...</MudText>
-                }
-                else
-                {
-                    <MudText>Iniciar Sesión</MudText>
-                }
-            </MudButton>
-        </EditForm>
+                    <MudButton ButtonType="ButtonType.Submit" 
+                               Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               FullWidth="true"
+                               Size="Size.Large"
+                               Disabled="@isLoading"
+                               Style="height: 50px; border-radius: 8px; font-weight: 600; text-transform: none; font-size: 1.1rem;">
+                        @if (isLoading)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" Color="Color.Surface" />
+                            <MudText Class="ms-2">Iniciando sesión...</MudText>
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Login" Class="mr-2" />
+                            <MudText>Iniciar Sesión</MudText>
+                        }
+                    </MudButton>
+                </EditForm>
 
-        <MudDivider Class="my-6" />
+                <MudDivider Class="my-6" />
 
-        <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
-            Usuarios de prueba:
-        </MudText>
-        <MudText Typo="Typo.caption" Align="Align.Center" Class="mt-2">
-            Estudiante: estudiante1@uni.edu<br />
-            Administrativo: admin1@uni.edu<br />
-            Laboratorista: lab1@uni.edu<br />
-            Contraseña: pass123
-        </MudText>
-    </MudPaper>
+                <MudPaper Outlined="true" Class="pa-4" Style="border-radius: 8px; background: rgba(103, 126, 234, 0.05);">
+                    <MudText Typo="Typo.subtitle2" Align="Align.Center" Color="Color.Primary" Style="font-weight: 600;" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-1" />
+                        Usuarios de Prueba
+                    </MudText>
+                    <MudStack Spacing="2">
+                        <MudChip Icon="@Icons.Material.Filled.School" Color="Color.Info" Size="Size.Small" Style="width: 100%; justify-content: flex-start;">
+                            Estudiante: estudiante1@uni.edu
+                        </MudChip>
+                        <MudChip Icon="@Icons.Material.Filled.Business" Color="Color.Warning" Size="Size.Small" Style="width: 100%; justify-content: flex-start;">
+                            Administrativo: admin1@uni.edu
+                        </MudChip>
+                        <MudChip Icon="@Icons.Material.Filled.Engineering" Color="Color.Success" Size="Size.Small" Style="width: 100%; justify-content: flex-start;">
+                            Laboratorista: lab1@uni.edu
+                        </MudChip>
+                        <MudDivider Class="my-2" />
+                        <MudText Typo="Typo.caption" Align="Align.Center" Color="Color.Secondary">
+                            <MudIcon Icon="@Icons.Material.Filled.Key" Size="Size.Small" Class="mr-1" />
+                            Contraseña: <strong>pass123</strong>
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
 </MudContainer>
 
 @code {

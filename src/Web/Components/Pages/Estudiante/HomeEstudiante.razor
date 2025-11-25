@@ -19,76 +19,95 @@
     </DashboardLayout>
 
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-            <MudText Typo="Typo.h4" Class="mb-4">Bienvenido, @currentUser?.NombreCompleto</MudText>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 mb-4">
+            <MudPaper Elevation="0" Class="pa-6 mb-4" Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px;">
+                <MudText Typo="Typo.h3" Style="color: white; font-weight: 700;" Class="mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.WavingHand" Class="mr-2" Style="font-size: 2.5rem;" />
+                    ¡Bienvenido, @currentUser?.NombreCompleto!
+                </MudText>
+                <MudText Typo="Typo.h6" Style="color: rgba(255,255,255,0.9);">
+                    Panel de Control - Estudiante
+                </MudText>
+            </MudPaper>
 
-            <MudGrid>
+            <MudGrid Spacing="3">
                 <MudItem xs="12" sm="6" md="3">
-                    <MudCard Elevation="4">
-                        <MudCardContent>
-                            <MudText Typo="Typo.h6">Incidentes Activos</MudText>
-                            <MudText Typo="Typo.h3" Color="Color.Primary">@incidentesActivos</MudText>
+                    <MudCard Elevation="4" Style="height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;">
+                        <MudCardContent Class="d-flex flex-column align-center justify-center pa-6">
+                            <MudIcon Icon="@Icons.Material.Filled.BugReport" Style="color: white; font-size: 3rem;" Class="mb-3" />
+                            <MudText Typo="Typo.h6" Style="color: white;">Incidentes Activos</MudText>
+                            <MudText Typo="Typo.h2" Style="color: white; font-weight: 700;">@incidentesActivos</MudText>
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
 
                 <MudItem xs="12" sm="6" md="3">
-                    <MudCard Elevation="4">
-                        <MudCardContent>
-                            <MudText Typo="Typo.h6">Incidentes Resueltos</MudText>
-                            <MudText Typo="Typo.h3" Color="Color.Success">@incidentesResueltos</MudText>
+                    <MudCard Elevation="4" Style="height: 100%; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 12px;">
+                        <MudCardContent Class="d-flex flex-column align-center justify-center pa-6">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Style="color: white; font-size: 3rem;" Class="mb-3" />
+                            <MudText Typo="Typo.h6" Style="color: white;">Incidentes Resueltos</MudText>
+                            <MudText Typo="Typo.h2" Style="color: white; font-weight: 700;">@incidentesResueltos</MudText>
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
 
                 <MudItem xs="12" sm="6" md="3">
-                    <MudCard Elevation="4">
-                        <MudCardContent>
-                            <MudText Typo="Typo.h6">En Progreso</MudText>
-                            <MudText Typo="Typo.h3" Color="Color.Warning">@incidentesEnProgreso</MudText>
+                    <MudCard Elevation="4" Style="height: 100%; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px;">
+                        <MudCardContent Class="d-flex flex-column align-center justify-center pa-6">
+                            <MudIcon Icon="@Icons.Material.Filled.Timelapse" Style="color: white; font-size: 3rem;" Class="mb-3" />
+                            <MudText Typo="Typo.h6" Style="color: white;">En Progreso</MudText>
+                            <MudText Typo="Typo.h2" Style="color: white; font-weight: 700;">@incidentesEnProgreso</MudText>
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
 
                 <MudItem xs="12" sm="6" md="3">
-                    <MudCard Elevation="4">
-                        <MudCardContent>
-                            <MudText Typo="Typo.h6">Total Reportados</MudText>
-                            <MudText Typo="Typo.h3" Color="Color.Info">@totalIncidentes</MudText>
+                    <MudCard Elevation="4" Style="height: 100%; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px;">
+                        <MudCardContent Class="d-flex flex-column align-center justify-center pa-6">
+                            <MudIcon Icon="@Icons.Material.Filled.Assignment" Style="color: white; font-size: 3rem;" Class="mb-3" />
+                            <MudText Typo="Typo.h6" Style="color: white;">Total Reportados</MudText>
+                            <MudText Typo="Typo.h2" Style="color: white; font-weight: 700;">@totalIncidentes</MudText>
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
             </MudGrid>
 
-            <MudPaper Class="pa-4 mt-4" Elevation="2">
-                <MudText Typo="Typo.h6" Class="mb-4">Mis Últimos Incidentes</MudText>
+            <MudPaper Class="pa-6 mt-4" Elevation="4" Style="border-radius: 12px;">
+                <div class="d-flex align-center mb-4">
+                    <MudIcon Icon="@Icons.Material.Filled.ListAlt" Color="Color.Primary" Class="mr-2" Style="font-size: 2rem;" />
+                    <MudText Typo="Typo.h5" Style="font-weight: 600;">Mis Últimos Incidentes</MudText>
+                </div>
                 
                 @if (incidentes == null)
                 {
-                    <MudProgressCircular Indeterminate="true" />
+                    <div class="d-flex justify-center pa-8">
+                        <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+                    </div>
                 }
                 else if (!incidentes.Any())
                 {
-                    <MudAlert Severity="Severity.Info">No has reportado incidentes aún.</MudAlert>
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Info" Class="my-4">
+                        No has reportado incidentes aún. ¡Comienza reportando tu primer incidente!
+                    </MudAlert>
                 }
                 else
                 {
-                    <MudTable Items="@incidentes.Take(5)" Hover="true" Breakpoint="Breakpoint.Sm">
+                    <MudTable Items="@incidentes.Take(5)" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm" Elevation="0">
                         <HeaderContent>
-                            <MudTh>Código</MudTh>
-                            <MudTh>Título</MudTh>
-                            <MudTh>Estado</MudTh>
-                            <MudTh>Prioridad</MudTh>
-                            <MudTh>Fecha</MudTh>
+                            <MudTh Style="font-weight: 600;">Código</MudTh>
+                            <MudTh Style="font-weight: 600;">Título</MudTh>
+                            <MudTh Style="font-weight: 600;">Estado</MudTh>
+                            <MudTh Style="font-weight: 600;">Prioridad</MudTh>
+                            <MudTh Style="font-weight: 600;">Fecha</MudTh>
                         </HeaderContent>
                         <RowTemplate>
-                            <MudTd DataLabel="Código">@context.CodigoIncidente</MudTd>
+                            <MudTd DataLabel="Código"><strong>@context.CodigoIncidente</strong></MudTd>
                             <MudTd DataLabel="Título">@context.Titulo</MudTd>
                             <MudTd DataLabel="Estado">
-                                <MudChip Size="Size.Small" Color="GetEstadoColor(context.Estado)">@context.Estado</MudChip>
+                                <MudChip Size="Size.Small" Color="GetEstadoColor(context.Estado)" Icon="@Icons.Material.Filled.Circle">@context.Estado</MudChip>
                             </MudTd>
                             <MudTd DataLabel="Prioridad">
-                                <MudChip Size="Size.Small" Color="GetPrioridadColor(context.Prioridad)">@context.Prioridad</MudChip>
+                                <MudChip Size="Size.Small" Color="GetPrioridadColor(context.Prioridad)" Icon="@Icons.Material.Filled.PriorityHigh">@context.Prioridad</MudChip>
                             </MudTd>
                             <MudTd DataLabel="Fecha">@context.FechaCreacion.ToString("dd/MM/yyyy")</MudTd>
                         </RowTemplate>
@@ -96,20 +115,25 @@
                 }
             </MudPaper>
 
-            <MudGrid Class="mt-4">
+            <MudGrid Class="mt-4" Spacing="3">
                 <MudItem xs="12" md="6">
-                    <MudCard Elevation="4">
-                        <MudCardHeader>
+                    <MudCard Elevation="4" Style="height: 100%; border-radius: 12px; border-left: 4px solid #667eea;">
+                        <MudCardHeader Style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
                             <CardHeaderContent>
-                                <MudText Typo="Typo.h6">Acciones Rápidas</MudText>
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Bolt" Color="Color.Primary" Class="mr-2" />
+                                    <MudText Typo="Typo.h6" Style="font-weight: 600;">Acciones Rápidas</MudText>
+                                </div>
                             </CardHeaderContent>
                         </MudCardHeader>
-                        <MudCardContent>
+                        <MudCardContent Class="pa-6">
                             <MudButton Variant="Variant.Filled" 
                                        Color="Color.Primary" 
                                        FullWidth="true"
                                        StartIcon="@Icons.Material.Filled.Add"
                                        Class="mb-3"
+                                       Size="Size.Large"
+                                       Style="border-radius: 8px; text-transform: none; font-weight: 600;"
                                        Href="/estudiante/nuevo-incidente">
                                 Reportar Nuevo Incidente
                             </MudButton>
@@ -117,6 +141,8 @@
                                        Color="Color.Primary" 
                                        FullWidth="true"
                                        StartIcon="@Icons.Material.Filled.Book"
+                                       Size="Size.Large"
+                                       Style="border-radius: 8px; text-transform: none; font-weight: 600;"
                                        Href="/estudiante/conocimientos">
                                 Buscar en Base de Conocimientos
                             </MudButton>
@@ -125,22 +151,30 @@
                 </MudItem>
 
                 <MudItem xs="12" md="6">
-                    <MudCard Elevation="4">
-                        <MudCardHeader>
+                    <MudCard Elevation="4" Style="height: 100%; border-radius: 12px; border-left: 4px solid #38ef7d;">
+                        <MudCardHeader Style="background: linear-gradient(135deg, rgba(17, 153, 142, 0.1) 0%, rgba(56, 239, 125, 0.1) 100%);">
                             <CardHeaderContent>
-                                <MudText Typo="Typo.h6">Información</MudText>
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Success" Class="mr-2" />
+                                    <MudText Typo="Typo.h6" Style="font-weight: 600;">Información del Usuario</MudText>
+                                </div>
                             </CardHeaderContent>
                         </MudCardHeader>
-                        <MudCardContent>
-                            <MudText Typo="Typo.body2" Class="mb-2">
-                                <strong>Facultad:</strong> @currentUser?.FacultadNombre
-                            </MudText>
-                            <MudText Typo="Typo.body2" Class="mb-2">
-                                <strong>Rol:</strong> @currentUser?.RolNombre
-                            </MudText>
-                            <MudText Typo="Typo.body2">
-                                <strong>Email:</strong> @currentUser?.Email
-                            </MudText>
+                        <MudCardContent Class="pa-6">
+                            <MudStack Spacing="3">
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.School" Color="Color.Primary" Class="mr-2" />
+                                    <MudText Typo="Typo.body1"><strong>Facultad:</strong> @currentUser?.FacultadNombre</MudText>
+                                </div>
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Badge" Color="Color.Secondary" Class="mr-2" />
+                                    <MudText Typo="Typo.body1"><strong>Rol:</strong> @currentUser?.RolNombre</MudText>
+                                </div>
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Email" Color="Color.Info" Class="mr-2" />
+                                    <MudText Typo="Typo.body1"><strong>Email:</strong> @currentUser?.Email</MudText>
+                                </div>
+                            </MudStack>
                         </MudCardContent>
                     </MudCard>
                 </MudItem>

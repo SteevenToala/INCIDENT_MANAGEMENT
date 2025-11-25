@@ -57,15 +57,23 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
+else
+{
+    app.UseDeveloperExceptionPage();
+}
 
 app.UseHttpsRedirection();
+
+// Enable serving static files from wwwroot
 app.UseStaticFiles();
+
 app.UseRouting();
 app.UseAntiforgery();
 
 app.UseSession();
 
 app.MapRazorComponents<IncidentManagement.Web.Components.App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .AddAdditionalAssemblies(typeof(MudBlazor.MudAlert).Assembly);
 
 app.Run();
