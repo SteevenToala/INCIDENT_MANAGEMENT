@@ -1,0 +1,47 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+@if (isAuthenticated)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public string? RequiredRole { get; set; }
+
+    private bool isAuthenticated = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user?.Identity?.IsAuthenticated == true)
+            {
+                if (string.IsNullOrEmpty(RequiredRole) || user.IsInRole(RequiredRole))
+                {
+                    isAuthenticated = true;
+                }
+                else
+                {
+                    Navigation.NavigateTo("/login", false);
+                }
+            }
+            else
+            {
+                Navigation.NavigateTo("/login", false);
+            }
+        }
+        catch
+        {
+            Navigation.NavigateTo("/login", false);
+        }
+    }
+}

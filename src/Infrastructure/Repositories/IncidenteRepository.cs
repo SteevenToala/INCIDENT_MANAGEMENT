@@ -17,6 +17,8 @@ public class IncidenteRepository : IIncidenteRepository
     public async Task<Incidente?> GetByIdAsync(int id)
     {
         return await _context.Incidentes
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(i => i.Computadora)
                 .ThenInclude(c => c.Laboratorio)
             .Include(i => i.UsuarioReportador)
@@ -29,6 +31,8 @@ public class IncidenteRepository : IIncidenteRepository
     public async Task<Incidente?> GetByCodigoAsync(string codigo)
     {
         return await _context.Incidentes
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(i => i.Computadora)
             .Include(i => i.UsuarioReportador)
             .FirstOrDefaultAsync(i => i.CodigoIncidente == codigo && !i.Eliminado);
@@ -37,6 +41,8 @@ public class IncidenteRepository : IIncidenteRepository
     public async Task<IEnumerable<Incidente>> GetAllAsync()
     {
         return await _context.Incidentes
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(i => i.Computadora)
                 .ThenInclude(c => c.Laboratorio)
             .Include(i => i.UsuarioReportador)
@@ -49,6 +55,8 @@ public class IncidenteRepository : IIncidenteRepository
     public async Task<IEnumerable<Incidente>> GetByUsuarioAsync(int usuarioId)
     {
         return await _context.Incidentes
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(i => i.Computadora)
                 .ThenInclude(c => c.Laboratorio)
             .Include(i => i.UsuarioReportador)
@@ -61,6 +69,8 @@ public class IncidenteRepository : IIncidenteRepository
     public async Task<IEnumerable<Incidente>> GetByEstadoAsync(string estado)
     {
         return await _context.Incidentes
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(i => i.Computadora)
             .Include(i => i.UsuarioReportador)
             .Where(i => i.Estado == estado && !i.Eliminado)
@@ -70,6 +80,8 @@ public class IncidenteRepository : IIncidenteRepository
     public async Task<IEnumerable<Incidente>> GetByLaboratorioAsync(int laboratorioId)
     {
         return await _context.Incidentes
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(i => i.Computadora)
             .Include(i => i.UsuarioReportador)
             .Where(i => i.LaboratorioID == laboratorioId && !i.Eliminado)

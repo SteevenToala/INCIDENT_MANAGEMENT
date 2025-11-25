@@ -1,12 +1,14 @@
 @page "/administrativo/home"
-@attribute [Authorize(Roles = "Administrativo")]
+@rendermode InteractiveServer
 @using IncidentManagement.Application.Interfaces
 @using IncidentManagement.Application.DTOs
 @using IncidentManagement.Web.Components.Layout
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IAuthService AuthService
 @inject IIncidenteService IncidenteService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
 @layout Layout.MainLayout
 
 <MudLayout>
@@ -162,11 +164,30 @@
 
     protected override async Task OnInitializedAsync()
     {
-        currentUser = await AuthService.GetCurrentUserAsync();
-        
-        if (currentUser != null)
+        try
         {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user?.Identity?.IsAuthenticated != true)
+            {
+                Navigation.NavigateTo("/login", forceLoad: true);
+                return;
+            }
+
+            currentUser = await AuthService.GetCurrentUserAsync();
+            
+            if (currentUser == null)
+            {
+                Navigation.NavigateTo("/login", forceLoad: true);
+                return;
+            }
+
             await LoadData();
+        }
+        catch
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
         }
     }
 

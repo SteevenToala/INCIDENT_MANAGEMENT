@@ -16,9 +16,13 @@ builder.Services.AddRazorComponents()
 // Add MudBlazor services
 builder.Services.AddMudServices();
 
-// Add Database Context
+// Add Database Context with optimizations
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.EnableSensitiveDataLogging(false);
+    options.EnableDetailedErrors(false);
+});
 
 // Add Repositories
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
@@ -39,16 +43,6 @@ builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStat
 builder.Services.AddScoped<CustomAuthenticationStateProvider>();
 builder.Services.AddAuthorizationCore();
 
-// Add HttpContextAccessor
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(options =>
-{
-    options.IdleTimeout = TimeSpan.FromHours(2);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-});
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -62,15 +56,14 @@ else
     app.UseDeveloperExceptionPage();
 }
 
-app.UseHttpsRedirection();
+// Comentado para evitar HTTP 400 en desarrollo
+// app.UseHttpsRedirection();
 
 // Enable serving static files from wwwroot
 app.UseStaticFiles();
 
 app.UseRouting();
 app.UseAntiforgery();
-
-app.UseSession();
 
 app.MapRazorComponents<IncidentManagement.Web.Components.App>()
     .AddInteractiveServerRenderMode()

@@ -1,17 +1,12 @@
-<Router AppAssembly="@typeof(Program).Assembly" AdditionalAssemblies="new[] { typeof(MudBlazor.MudAlert).Assembly }">
+<Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
-        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
-            <NotAuthorized>
-                @if (context.User.Identity?.IsAuthenticated != true)
-                {
-                    <RedirectToLogin />
-                }
-                else
-                {
-                    <p>No tienes permisos para acceder a esta página.</p>
-                }
-            </NotAuthorized>
-        </AuthorizeRouteView>
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
+    <NotFound>
+        <PageTitle>No encontrado</PageTitle>
+        <LayoutView Layout="@typeof(Layout.MainLayout)">
+            <p role="alert">Página no encontrada.</p>
+        </LayoutView>
+    </NotFound>
 </Router>

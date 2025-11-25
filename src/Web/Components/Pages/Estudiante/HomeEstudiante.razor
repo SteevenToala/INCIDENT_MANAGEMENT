@@ -1,12 +1,14 @@
 @page "/estudiante/home"
-@attribute [Authorize(Roles = "Estudiante,Docente")]
+@rendermode InteractiveServer
 @using IncidentManagement.Application.Interfaces
 @using IncidentManagement.Application.DTOs
 @using IncidentManagement.Web.Components.Layout
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IAuthService AuthService
 @inject IIncidenteService IncidenteService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
 @layout Layout.MainLayout
 
 <MudLayout>
@@ -190,19 +192,40 @@
     private int incidentesResueltos = 0;
     private int incidentesEnProgreso = 0;
     private int totalIncidentes = 0;
+    private bool isLoading = false;
 
     protected override async Task OnInitializedAsync()
     {
-        currentUser = await AuthService.GetCurrentUserAsync();
-        
-        if (currentUser != null)
+        try
         {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user?.Identity?.IsAuthenticated != true)
+            {
+                Navigation.NavigateTo("/login", forceLoad: true);
+                return;
+            }
+
+            currentUser = await AuthService.GetCurrentUserAsync();
+            
+            if (currentUser == null)
+            {
+                Navigation.NavigateTo("/login", forceLoad: true);
+                return;
+            }
+
             await LoadData();
+        }
+        catch
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
         }
     }
 
     private async Task LoadData()
     {
+        isLoading = true;
         try
         {
             incidentes = await IncidenteService.GetMisIncidentesAsync(currentUser!.UsuarioID);
@@ -211,9 +234,18 @@
             incidentesResueltos = incidentes.Count(i => i.Estado == "Resuelto" || i.Estado == "Cerrado");
             incidentesEnProgreso = incidentes.Count(i => i.Estado == "En Progreso");
         }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("❌ No se puede conectar al servidor de base de datos", Severity.Error);
+        }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error al cargar datos: {ex.Message}", Severity.Error);
+            Snackbar.Add($"❌ Error al cargar tus incidentes: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Error en LoadData: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
