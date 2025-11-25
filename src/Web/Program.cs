@@ -64,8 +64,6 @@ app.UseRouting();
 app.UseAntiforgery();
 
 app.UseSession();
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.MapRazorComponents<IncidentManagement.Web.Components.App>()
     .AddInteractiveServerRenderMode();
