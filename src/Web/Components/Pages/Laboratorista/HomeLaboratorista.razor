@@ -1,0 +1,249 @@
+@page "/laboratorista/home"
+@attribute [Authorize(Roles = "Laboratorista")]
+@using IncidentManagement.Application.Interfaces
+@using IncidentManagement.Application.DTOs
+@using IncidentManagement.Web.Components.Layout
+@inject IAuthService AuthService
+@inject IIncidenteService IncidenteService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@layout Layout.MainLayout
+
+<MudLayout>
+    <DashboardLayout UserName="@currentUser?.NombreCompleto" OnLogout="HandleLogout">
+        <MudNavLink Href="/laboratorista/home" Icon="@Icons.Material.Filled.Home">Inicio</MudNavLink>
+        <MudNavLink Href="/laboratorista/incidentes" Icon="@Icons.Material.Filled.BugReport">Incidentes Asignados</MudNavLink>
+        <MudNavLink Href="/laboratorista/todos-incidentes" Icon="@Icons.Material.Filled.List">Todos los Incidentes</MudNavLink>
+        @if (currentUser?.EsAsignador == true)
+        {
+            <MudNavLink Href="/laboratorista/asignar" Icon="@Icons.Material.Filled.Assignment">Asignar Incidentes</MudNavLink>
+        }
+        <MudNavLink Href="/laboratorista/conocimientos" Icon="@Icons.Material.Filled.Book">Base de Conocimientos</MudNavLink>
+        <MudNavLink Href="/laboratorista/nuevo-conocimiento" Icon="@Icons.Material.Filled.Add">Registrar Solución</MudNavLink>
+        <MudNavLink Href="/laboratorista/notificaciones" Icon="@Icons.Material.Filled.Notifications">Notificaciones</MudNavLink>
+    </DashboardLayout>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+            <MudText Typo="Typo.h4" Class="mb-2">Panel de Laboratorista</MudText>
+            @if (currentUser?.EsAsignador == true)
+            {
+                <MudChip Color="Color.Success" Icon="@Icons.Material.Filled.Star" Class="mb-4">Asignador</MudChip>
+            }
+            <MudText Typo="Typo.h6" Class="mb-4">Bienvenido, @currentUser?.NombreCompleto</MudText>
+
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudCard Elevation="4">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6">Incidentes Pendientes</MudText>
+                            <MudText Typo="Typo.h3" Color="Color.Warning">@incidentesPendientes</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudCard Elevation="4">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6">En Progreso</MudText>
+                            <MudText Typo="Typo.h3" Color="Color.Info">@incidentesEnProgreso</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudCard Elevation="4">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6">Resueltos Hoy</MudText>
+                            <MudText Typo="Typo.h3" Color="Color.Success">@incidentesResueltosHoy</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudCard Elevation="4">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6">Total Asignados</MudText>
+                            <MudText Typo="Typo.h3" Color="Color.Primary">@totalIncidentes</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+
+            <MudPaper Class="pa-4 mt-4" Elevation="2">
+                <MudText Typo="Typo.h6" Class="mb-4">Incidentes Recientes</MudText>
+                
+                @if (incidentes == null)
+                {
+                    <MudProgressCircular Indeterminate="true" />
+                }
+                else if (!incidentes.Any())
+                {
+                    <MudAlert Severity="Severity.Info">No tienes incidentes asignados actualmente.</MudAlert>
+                }
+                else
+                {
+                    <MudTable Items="@incidentes.Take(10)" Hover="true" Breakpoint="Breakpoint.Sm">
+                        <HeaderContent>
+                            <MudTh>Código</MudTh>
+                            <MudTh>Título</MudTh>
+                            <MudTh>Laboratorio</MudTh>
+                            <MudTh>Reportado Por</MudTh>
+                            <MudTh>Estado</MudTh>
+                            <MudTh>Prioridad</MudTh>
+                            <MudTh>Fecha</MudTh>
+                            <MudTh>Acciones</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Código">@context.CodigoIncidente</MudTd>
+                            <MudTd DataLabel="Título">@context.Titulo</MudTd>
+                            <MudTd DataLabel="Laboratorio">@context.LaboratorioNombre</MudTd>
+                            <MudTd DataLabel="Reportado Por">@context.UsuarioReportador</MudTd>
+                            <MudTd DataLabel="Estado">
+                                <MudChip Size="Size.Small" Color="GetEstadoColor(context.Estado)">@context.Estado</MudChip>
+                            </MudTd>
+                            <MudTd DataLabel="Prioridad">
+                                <MudChip Size="Size.Small" Color="GetPrioridadColor(context.Prioridad)">@context.Prioridad</MudChip>
+                            </MudTd>
+                            <MudTd DataLabel="Fecha">@context.FechaCreacion.ToString("dd/MM/yyyy")</MudTd>
+                            <MudTd DataLabel="Acciones">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                               Color="Color.Primary" 
+                                               Size="Size.Small" />
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudPaper>
+
+            <MudGrid Class="mt-4">
+                <MudItem xs="12" md="6">
+                    <MudCard Elevation="4">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">Acciones Rápidas</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudButton Variant="Variant.Filled" 
+                                       Color="Color.Primary" 
+                                       FullWidth="true"
+                                       StartIcon="@Icons.Material.Filled.List"
+                                       Class="mb-3"
+                                       Href="/laboratorista/incidentes">
+                                Ver Incidentes Asignados
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" 
+                                       Color="Color.Primary" 
+                                       FullWidth="true"
+                                       StartIcon="@Icons.Material.Filled.Add"
+                                       Class="mb-3"
+                                       Href="/laboratorista/nuevo-conocimiento">
+                                Registrar Nueva Solución
+                            </MudButton>
+                            @if (currentUser?.EsAsignador == true)
+                            {
+                                <MudButton Variant="Variant.Filled" 
+                                           Color="Color.Secondary" 
+                                           FullWidth="true"
+                                           StartIcon="@Icons.Material.Filled.Assignment"
+                                           Href="/laboratorista/asignar">
+                                    Asignar Incidentes
+                                </MudButton>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudCard Elevation="4">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">Información del Laboratorista</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Class="mb-2">
+                                <strong>Facultad:</strong> @currentUser?.FacultadNombre
+                            </MudText>
+                            <MudText Typo="Typo.body2" Class="mb-2">
+                                <strong>Rol:</strong> Laboratorista @(currentUser?.EsAsignador == true ? "(Asignador)" : "")
+                            </MudText>
+                            <MudText Typo="Typo.body2">
+                                <strong>Email:</strong> @currentUser?.Email
+                            </MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private UsuarioDto? currentUser;
+    private IEnumerable<IncidenteDto> incidentes = new List<IncidenteDto>();
+    private int incidentesPendientes = 0;
+    private int incidentesEnProgreso = 0;
+    private int incidentesResueltosHoy = 0;
+    private int totalIncidentes = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await AuthService.GetCurrentUserAsync();
+        
+        if (currentUser != null)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            // En una implementación real, necesitarías un método específico para obtener incidentes asignados
+            incidentes = await IncidenteService.GetAllIncidentesAsync();
+            
+            totalIncidentes = incidentes.Count();
+            incidentesPendientes = incidentes.Count(i => i.Estado == "Abierto");
+            incidentesEnProgreso = incidentes.Count(i => i.Estado == "En Progreso");
+            incidentesResueltosHoy = incidentes.Count(i => 
+                (i.Estado == "Resuelto" || i.Estado == "Cerrado") && 
+                i.FechaResolucion?.Date == DateTime.Today);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar datos: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login");
+    }
+
+    private Color GetEstadoColor(string estado)
+    {
+        return estado switch
+        {
+            "Abierto" => Color.Info,
+            "En Progreso" => Color.Warning,
+            "Resuelto" => Color.Success,
+            "Cerrado" => Color.Success,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetPrioridadColor(string prioridad)
+    {
+        return prioridad switch
+        {
+            "Alta" => Color.Error,
+            "Media" => Color.Warning,
+            "Baja" => Color.Info,
+            _ => Color.Default
+        };
+    }
+}
