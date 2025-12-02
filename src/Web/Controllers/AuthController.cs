@@ -90,8 +90,6 @@ public class AuthController : Controller
             "docente" => "/docente/home",
             "administrativo" => "/administrativo/home",
             "laboratorista" => "/laboratorista/home",
-            "experto" => "/experto/home",
-            "proveedor" => "/proveedor/home",
             _ => "/"
         };
     }

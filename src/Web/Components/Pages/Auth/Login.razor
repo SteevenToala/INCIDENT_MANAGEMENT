@@ -59,7 +59,7 @@
     private string email = "";
     private string password = "";
     private string errorMessage = "";
-    private string returnUrl = "/";
+        private string? returnUrl;
     private readonly Dictionary<string, object> emailInputAttributes = new()
     {
         { "name", "Email" },
@@ -93,14 +93,15 @@
         var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
         var queryParams = QueryHelpers.ParseQuery(uri.Query);
 
-        if (queryParams.TryGetValue("error", out var errorValues))
-        {
-            errorMessage = errorValues.FirstOrDefault() ?? string.Empty;
-        }
+            if (queryParams.TryGetValue("error", out var errorValues))
+            {
+                errorMessage = errorValues.FirstOrDefault() ?? string.Empty;
+            }
 
-        if (queryParams.TryGetValue("returnUrl", out var returnValues))
-        {
-            returnUrl = string.IsNullOrWhiteSpace(returnValues.FirstOrDefault()) ? "/" : returnValues.First()!;
-        }
+            if (queryParams.TryGetValue("returnUrl", out var returnValues))
+            {
+                var rawValue = returnValues.FirstOrDefault();
+                returnUrl = string.IsNullOrWhiteSpace(rawValue) ? null : rawValue;
+            }
     }
 }

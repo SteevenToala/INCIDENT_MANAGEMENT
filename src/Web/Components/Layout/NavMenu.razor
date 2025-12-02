@@ -1,30 +1,178 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Web</a>
-    </div>
-</div>
+﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using MudBlazor
+@implements IDisposable
+@inject AuthenticationStateProvider AuthStateProvider
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+<MudPaper Elevation="4" Class="pa-4 nav-menu h-100 d-flex flex-column">
+    @if (!isAuthenticated)
+    {
+        <MudStack Spacing="2">
+            <MudText Typo="Typo.subtitle1">Bienvenido</MudText>
+            <MudText Typo="Typo.body2" Class="text-muted">Inicia sesión para acceder a tus módulos.</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/login" FullWidth="true">
+                <MudIcon Icon="@Icons.Material.Filled.Login" Class="me-2" /> Iniciar sesión
+            </MudButton>
+        </MudStack>
+    }
+    else
+    {
+        <MudStack Spacing="1" Class="mb-4">
+            <MudText Typo="Typo.caption" Class="text-muted">Sesión activa</MudText>
+            <MudText Typo="Typo.h6">@userName</MudText>
+            <MudChip Color="Color.Primary" Variant="Variant.Filled" Class="w-fit-content text-uppercase">@userRole</MudChip>
+        </MudStack>
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
+        <MudDivider Class="mb-3" />
+
+        <div class="flex-grow-1 overflow-auto pe-1">
+            @foreach (var section in menuSections)
+            {
+                <MudText Typo="Typo.subtitle2" Class="text-uppercase text-muted mt-3 mb-1">@(section.Title)</MudText>
+                <MudNavMenu Dense="true" Class="mb-2">
+                    @foreach (var item in section.Items)
+                    {
+                        <MudNavLink Href="@item.Href" Match="item.MatchAll ? NavLinkMatch.All : NavLinkMatch.Prefix">
+                            <MudIcon Icon="@item.Icon" Class="me-2" /> @item.Label
+                        </MudNavLink>
+                    }
+                </MudNavMenu>
+            }
         </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
+        <MudDivider Class="my-3" />
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
+        <form method="post" action="/auth/logout" class="w-100">
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Logout" ButtonType="ButtonType.Submit" FullWidth="true">
+                Cerrar sesión
+            </MudButton>
+        </form>
+    }
+</MudPaper>
+
+@code {
+    private readonly List<MenuSection> menuSections = new();
+    private bool isAuthenticated;
+    private string userName = string.Empty;
+    private string userRole = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthStateProvider.AuthenticationStateChanged += HandleAuthenticationStateChanged;
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        UpdateAuthenticationState(state);
+    }
+
+    private async void HandleAuthenticationStateChanged(Task<AuthenticationState> task)
+    {
+        var state = await task;
+        UpdateAuthenticationState(state);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateAuthenticationState(AuthenticationState state)
+    {
+        var user = state.User;
+        isAuthenticated = user.Identity?.IsAuthenticated ?? false;
+
+        if (!isAuthenticated)
+        {
+            userName = string.Empty;
+            userRole = string.Empty;
+            menuSections.Clear();
+            return;
+        }
+
+        userName = user.Identity?.Name ?? user.FindFirstValue(ClaimTypes.Email) ?? "Usuario";
+        userRole = user.FindFirstValue(ClaimTypes.Role) ?? "Usuario";
+
+        menuSections.Clear();
+        foreach (var section in BuildMenuForRole(userRole))
+        {
+            menuSections.Add(section);
+        }
+    }
+
+    private static IEnumerable<MenuSection> BuildMenuForRole(string role)
+    {
+        var normalizedRole = role.ToLowerInvariant();
+
+        yield return new MenuSection("Navegación", new[]
+        {
+            normalizedRole switch
+            {
+                "estudiante" => new MenuItem("Inicio", "/estudiante/home", Icons.Material.Filled.Home, true),
+                "docente" => new MenuItem("Inicio", "/docente/home", Icons.Material.Filled.Home, true),
+                "administrativo" => new MenuItem("Panel", "/administrativo/home", Icons.Material.Filled.Dashboard, true),
+                "laboratorista" => new MenuItem("Panel", "/laboratorista/home", Icons.Material.Filled.Build, true),
+                _ => new MenuItem("Inicio", "/", Icons.Material.Filled.Home, true)
+            }
+        });
+
+        foreach (var extraSection in normalizedRole switch
+        {
+            "estudiante" => new[]
+            {
+                new MenuSection("Incidencias", new[]
+                {
+                    new MenuItem("Mis incidencias", "/estudiante/incidencias", Icons.Material.Filled.ListAlt),
+                    new MenuItem("Reportar", "/estudiante/incidencias/nuevo", Icons.Material.Filled.AddCircle),
+                }),
+                new MenuSection("Recursos", new[]
+                {
+                    new MenuItem("Base de conocimiento", "/estudiante/base-conocimiento", Icons.Material.Filled.MenuBook)
+                })
+            },
+            "docente" => new[]
+            {
+                new MenuSection("Incidencias", new[]
+                {
+                    new MenuItem("Reportar incidente", "/docente/incidencias/nuevo", Icons.Material.Filled.AddCircle),
+                    new MenuItem("Mis solicitudes", "/docente/incidencias", Icons.Material.Filled.ListAlt)
+                }),
+                new MenuSection("Recursos", new[]
+                {
+                    new MenuItem("Base de conocimiento", "/docente/base-conocimiento", Icons.Material.Filled.MenuBook)
+                })
+            },
+            "administrativo" => new[]
+            {
+                new MenuSection("Operaciones", new[]
+                {
+                    new MenuItem("Gestión de casos", "/administrativo/incidentes", Icons.Material.Filled.Assignment),
+                    new MenuItem("Asignar técnicos", "/administrativo/asignaciones", Icons.Material.Filled.AssignmentInd)
+                }),
+                new MenuSection("Control", new[]
+                {
+                    new MenuItem("Usuarios", "/administrativo/usuarios", Icons.Material.Filled.Group),
+                    new MenuItem("Reportes", "/administrativo/reportes", Icons.Material.Filled.Analytics)
+                })
+            },
+            "laboratorista" => new[]
+            {
+                new MenuSection("Asignaciones", new[]
+                {
+                    new MenuItem("Mis tareas", "/laboratorista/asignaciones", Icons.Material.Filled.Task),
+                    new MenuItem("Actualizar estado", "/laboratorista/asignaciones/actualizar", Icons.Material.Filled.Update)
+                }),
+                new MenuSection("Recursos", new[]
+                {
+                    new MenuItem("Base de conocimiento", "/laboratorista/base-conocimiento", Icons.Material.Filled.MenuBook)
+                })
+            },
+            _ => Array.Empty<MenuSection>()
+        })
+        {
+            yield return extraSection;
+        }
+    }
+
+    public void Dispose()
+    {
+        AuthStateProvider.AuthenticationStateChanged -= HandleAuthenticationStateChanged;
+    }
+
+    private record MenuItem(string Label, string Href, string Icon, bool MatchAll = false);
+    private record MenuSection(string Title, IEnumerable<MenuItem> Items);
+}
 

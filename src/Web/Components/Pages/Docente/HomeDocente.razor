@@ -1,0 +1,104 @@
+@page "/docente/home"
+@rendermode InteractiveServer
+@using MudBlazor
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Home Docente</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+    <MudText Typo="Typo.h3" Class="mb-6">
+        <MudIcon Icon="@Icons.Material.Filled.School" Class="me-2" />
+        Panel Docente - @userName
+    </MudText>
+
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3">
+                <MudCardContent>
+                    <MudText Typo="Typo.h5">
+                        <MudIcon Icon="@Icons.Material.Filled.ListAlt" Color="Color.Primary" />
+                        Incidencias enviadas
+                    </MudText>
+                    <MudText Typo="Typo.h3">0</MudText>
+                    <MudText Typo="Typo.body2">Total</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary">Ver detalle</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3">
+                <MudCardContent>
+                    <MudText Typo="Typo.h5">
+                        <MudIcon Icon="@Icons.Material.Filled.Pending" Color="Color.Warning" />
+                        En seguimiento
+                    </MudText>
+                    <MudText Typo="Typo.h3">0</MudText>
+                    <MudText Typo="Typo.body2">Casos abiertos</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Warning">Ver casos</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3">
+                <MudCardContent>
+                    <MudText Typo="Typo.h5">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
+                        Resueltos
+                    </MudText>
+                    <MudText Typo="Typo.h3">0</MudText>
+                    <MudText Typo="Typo.body2">Último mes</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Success">Ver historial</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <MudPaper Elevation="3" Class="mt-6 pa-6">
+        <MudText Typo="Typo.h5" Class="mb-4">Accesos rápidos</MudText>
+        <MudStack Row="true" Spacing="3">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddCircle">
+                Reportar incidente
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.List">
+                Mis solicitudes
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.MenuBook">
+                Base de conocimiento
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string userName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        if (!user.IsInRole("Docente"))
+        {
+            Console.WriteLine("[HomeDocente] Usuario sin rol Docente, redirigiendo al login");
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        userName = user.Identity?.Name ?? "Docente";
+    }
+}
