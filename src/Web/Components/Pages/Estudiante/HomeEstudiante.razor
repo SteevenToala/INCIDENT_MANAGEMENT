@@ -1,6 +1,8 @@
 @page "/estudiante/home"
 @attribute [Authorize(Roles = "Estudiante")]
 @rendermode InteractiveServer
+@using System.Security.Claims
+@using Web.Models.Estudiante
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject IEstudiantePortalService EstudiantePortalService
@@ -8,12 +10,24 @@
 <PageTitle>Inicio Estudiante</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-8">
+    <MudStack Spacing="1" Class="mb-6">
+        <MudText Typo="Typo.h3">
+            <MudIcon Icon="@Icons.Material.Filled.Home" Class="me-2" />
+            Bienvenido, @userName
+        </MudText>
+        <MudText Typo="Typo.subtitle2" Class="text-muted">Resumen de tus incidencias y acciones rápidas.</MudText>
+    </MudStack>
+
     @if (isLoading)
     {
-        <MudPaper Elevation="2" Class="pa-6 d-flex align-center gap-4">
-            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Medium" />
-            <MudText Typo="Typo.h6">Cargando tu panel personalizado...</MudText>
-        </MudPaper>
+        <MudGrid>
+            @for (var i = 0; i < 4; i++)
+            {
+                <MudItem xs="12" sm="6" md="3">
+                    <MudSkeleton Height="150px" Animation="Animation.Wave" />
+                </MudItem>
+            }
+        </MudGrid>
     }
     else if (!string.IsNullOrEmpty(loadError))
     {
@@ -21,123 +35,129 @@
     }
     else
     {
-        <MudStack Spacing="3">
-            <MudStack Spacing="0">
-                <MudText Typo="Typo.overline" Class="text-uppercase text-muted">Panel del estudiante</MudText>
-                <MudText Typo="Typo.h4">Hola, @userName</MudText>
-                <MudText Typo="Typo.subtitle2" Class="text-muted">Aquí tienes el resumen de tus incidencias y recursos sugeridos.</MudText>
-            </MudStack>
-
-            <MudGrid GutterSize="2">
-                @foreach (var card in StatCards())
-                {
-                    <MudItem xs="12" sm="6" md="3">
-                        <MudCard Elevation="3" Class="h-100">
-                            <MudCardContent>
-                                <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1">
-                                    <MudIcon Icon="@card.Icon" Color="@card.Color" Size="Size.Medium" />
-                                    <MudText Typo="Typo.subtitle2" Class="text-muted">@card.Label</MudText>
-                                </MudStack>
-                                <MudText Typo="Typo.h3" Class="mt-2">@card.Value</MudText>
-                                <MudText Typo="Typo.caption" Class="text-muted">@card.Description</MudText>
-                            </MudCardContent>
-                        </MudCard>
-                    </MudItem>
-                }
-            </MudGrid>
-
-            <MudGrid GutterSize="2">
-                <MudItem xs="12" md="8">
-                    <MudPaper Elevation="3" Class="pa-4 h-100">
-                        <MudStack Direction="Row" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
-                            <MudText Typo="Typo.h6">Últimas incidencias</MudText>
-                            <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.List" OnClick="VerIncidencias">Ver todas</MudButton>
+        <MudGrid Class="mb-6">
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="3" Class="h-100">
+                    <MudCardContent>
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.h6">
+                                <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Primary" Class="me-1" />
+                                Mis incidencias
+                            </MudText>
+                            <MudText Typo="Typo.h3">@dashboard.Counters.Total</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">Reportadas en total</MudText>
                         </MudStack>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="VerIncidencias">Ver todas</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-                        @if (!dashboard.UltimasIncidencias.Any())
-                        {
-                            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">Aún no registras incidencias.</MudAlert>
-                        }
-                        else
-                        {
-                            <MudTable Items="dashboard.UltimasIncidencias" Dense="true" Hover="true">
-                                <HeaderContent>
-                                    <MudTh>Código</MudTh>
-                                    <MudTh>Título</MudTh>
-                                    <MudTh>Estado</MudTh>
-                                    <MudTh>Prioridad</MudTh>
-                                    <MudTh>Creada</MudTh>
-                                </HeaderContent>
-                                <RowTemplate>
-                                    <MudTd DataLabel="Código">@context.CodigoIncidente</MudTd>
-                                    <MudTd DataLabel="Título">@context.Titulo</MudTd>
-                                    <MudTd DataLabel="Estado">
-                                        <MudChip Color="@StatusColor(context.Estado)" Variant="Variant.Outlined" Size="Size.Small">@context.Estado</MudChip>
-                                    </MudTd>
-                                    <MudTd DataLabel="Prioridad">
-                                        <MudChip Color="@PriorityColor(context.Prioridad)" Variant="Variant.Filled" Size="Size.Small">@context.Prioridad</MudChip>
-                                    </MudTd>
-                                    <MudTd DataLabel="Creada">@context.FechaCreacion.ToString("dd/MM HH:mm")</MudTd>
-                                </RowTemplate>
-                            </MudTable>
-                        }
-                    </MudPaper>
-                </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="3" Class="h-100">
+                    <MudCardContent>
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.h6">
+                                <MudIcon Icon="@Icons.Material.Filled.Pending" Color="Color.Warning" Class="me-1" />
+                                Pendientes
+                            </MudText>
+                            <MudText Typo="Typo.h3">@dashboard.Counters.Pendientes</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">Sin iniciar</MudText>
+                        </MudStack>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Warning" OnClick="VerPendientes">Ver detalles</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-                <MudItem xs="12" md="4">
-                    <MudStack Spacing="2">
-                        <MudPaper Elevation="3" Class="pa-4">
-                            <MudText Typo="Typo.subtitle1" Class="mb-2">Acciones rápidas</MudText>
-                            <MudStack Spacing="2">
-                                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddCircle" OnClick="ReportarIncidencia">Reportar incidencia</MudButton>
-                                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.List" OnClick="VerIncidencias">Mis incidencias</MudButton>
-                                <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.MenuBook" OnClick="AbrirBaseConocimiento">Base de conocimiento</MudButton>
-                            </MudStack>
-                        </MudPaper>
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="3" Class="h-100">
+                    <MudCardContent>
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.h6">
+                                <MudIcon Icon="@Icons.Material.Filled.Autorenew" Color="Color.Info" Class="me-1" />
+                                En proceso
+                            </MudText>
+                            <MudText Typo="Typo.h3">@dashboard.Counters.EnProceso</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">Atendidas actualmente</MudText>
+                        </MudStack>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Info" OnClick="VerEnProceso">Seguimiento</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-                        <MudPaper Elevation="3" Class="pa-4">
-                            <MudStack Direction="Row" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
-                                <MudText Typo="Typo.subtitle1">Sugerencias</MudText>
-                                <MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Primary" OnClick="RefrescarArticulos" Disabled="isRefreshingArticulos" />
-                            </MudStack>
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="3" Class="h-100">
+                    <MudCardContent>
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.h6">
+                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="me-1" />
+                                Resueltas
+                            </MudText>
+                            <MudText Typo="Typo.h3">@dashboard.Counters.Resueltos</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">Cerradas exitosamente</MudText>
+                        </MudStack>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Success" OnClick="VerResueltas">Historial</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
 
-                            @if (isRefreshingArticulos)
-                            {
-                                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
-                            }
-                            else if (!articulosSugeridos.Any())
-                            {
-                                <MudText Typo="Typo.caption" Class="text-muted">No hay artículos recomendados por ahora.</MudText>
-                            }
-                            else
-                            {
-                                <MudList Dense="true">
-                                    @foreach (var articulo in articulosSugeridos)
-                                    {
-                                        <MudListItem Class="cursor-pointer" OnClick="@(() => AbrirBaseConocimiento(articulo.SolucionID))">
-                                            <MudStack Spacing="0">
-                                                <MudText Typo="Typo.subtitle2">@articulo.Titulo</MudText>
-                                                <MudText Typo="Typo.caption" Class="text-muted">@articulo.Categoria · @articulo.FechaCreacion.ToString("dd/MM")</MudText>
-                                            </MudStack>
-                                        </MudListItem>
-                                    }
-                                </MudList>
-                            }
-                        </MudPaper>
+        <MudGrid GutterSize="3">
+            <MudItem xs="12" md="8">
+                <MudPaper Elevation="3" Class="pa-4 h-100">
+                    <MudStack Direction="Row" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                        <MudText Typo="Typo.h5">Últimas incidencias</MudText>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" OnClick="VerIncidencias">Ver todas</MudButton>
                     </MudStack>
-                </MudItem>
-            </MudGrid>
-        </MudStack>
+
+                    @if (!dashboard.UltimasIncidencias.Any())
+                    {
+                        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">Aún no has registrado incidencias.</MudAlert>
+                    }
+                    else
+                    {
+                        <MudList Dense="true">
+                            @foreach (var incidente in dashboard.UltimasIncidencias)
+                            {
+                                <MudListItem Class="align-start">
+                                    <MudStack Spacing="1">
+                                        <MudText Typo="Typo.subtitle2">@incidente.Titulo</MudText>
+                                        <MudText Typo="Typo.body2" Class="text-muted">@incidente.ComputadoraNombre · @incidente.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</MudText>
+                                    </MudStack>
+                                    <MudChip Color="@StatusColor(incidente.Estado)" Variant="Variant.Outlined" Size="Size.Small" Class="ms-auto">@incidente.Estado</MudChip>
+                                </MudListItem>
+                                <MudDivider />
+                            }
+                        </MudList>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="3" Class="pa-4 h-100">
+                    <MudText Typo="Typo.h5" Class="mb-3">Acciones rápidas</MudText>
+                    <MudStack Spacing="2">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NuevaIncidencia">Nueva incidencia</MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.MenuBook" OnClick="IrBaseConocimiento">Base de conocimiento</MudButton>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
     }
 </MudContainer>
 
 @code {
     private EstudianteDashboardModel dashboard = new();
-    private List<BaseConocimientoDto> articulosSugeridos = new();
-    private string userName = string.Empty;
-    private string? loadError;
     private bool isLoading = true;
-    private bool isRefreshingArticulos;
+    private string? loadError;
+    private string userName = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -156,7 +176,7 @@
             return;
         }
 
-        userName = user.Identity?.Name ?? user.FindFirstValue(System.Security.Claims.ClaimTypes.Email) ?? "Usuario";
+        userName = user.Identity?.Name ?? user.FindFirstValue(System.Security.Claims.ClaimTypes.Email) ?? "Estudiante";
         var userId = user.GetUserId();
         if (userId is null)
         {
@@ -168,27 +188,16 @@
         try
         {
             dashboard = await EstudiantePortalService.GetDashboardAsync(userId.Value);
-            articulosSugeridos = (await EstudiantePortalService.BuscarBaseConocimientoAsync(null))
-                .Take(3)
-                .ToList();
         }
         catch (Exception ex)
         {
-            loadError = "No pudimos cargar tu panel. Intenta nuevamente.";
+            loadError = "No pudimos cargar tu panel.";
             Console.WriteLine($"[HomeEstudiante] Error: {ex}");
         }
         finally
         {
             isLoading = false;
         }
-    }
-
-    private IEnumerable<(string Label, string Description, int Value, string Icon, Color Color)> StatCards()
-    {
-        yield return ("Total", "Incidencias creadas", dashboard.Counters.Total, Icons.Material.Filled.AllInbox, Color.Primary);
-        yield return ("Pendientes", "En espera de atención", dashboard.Counters.Pendientes, Icons.Material.Filled.PendingActions, Color.Warning);
-        yield return ("En proceso", "Asignadas a soporte", dashboard.Counters.EnProceso, Icons.Material.Filled.Autorenew, Color.Info);
-        yield return ("Resueltas", "Cerradas exitosamente", dashboard.Counters.Resueltos, Icons.Material.Filled.CheckCircle, Color.Success);
     }
 
     private Color StatusColor(string estado) => estado.ToLowerInvariant() switch
@@ -199,40 +208,10 @@
         _ => Color.Default
     };
 
-    private Color PriorityColor(string prioridad) => prioridad.ToLowerInvariant() switch
-    {
-        "alta" => Color.Error,
-        "media" => Color.Warning,
-        "baja" => Color.Success,
-        _ => Color.Default
-    };
-
-    private void ReportarIncidencia() => Navigation.NavigateTo("/estudiante/incidencias/nuevo");
     private void VerIncidencias() => Navigation.NavigateTo("/estudiante/incidencias");
-    private void AbrirBaseConocimiento() => Navigation.NavigateTo("/estudiante/base-conocimiento");
-
-    private void AbrirBaseConocimiento(int articuloId)
-    {
-        Navigation.NavigateTo($"/estudiante/base-conocimiento?resaltar={articuloId}");
-    }
-
-    private async Task RefrescarArticulos()
-    {
-        isRefreshingArticulos = true;
-        try
-        {
-            articulosSugeridos = (await EstudiantePortalService.BuscarBaseConocimientoAsync(null))
-                .OrderByDescending(a => a.FechaCreacion)
-                .Take(3)
-                .ToList();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[HomeEstudiante] Error refrescando artículos: {ex}");
-        }
-        finally
-        {
-            isRefreshingArticulos = false;
-        }
-    }
+    private void VerPendientes() => Navigation.NavigateTo("/estudiante/incidencias?estado=abierto");
+    private void VerEnProceso() => Navigation.NavigateTo("/estudiante/incidencias?estado=en%20proceso");
+    private void VerResueltas() => Navigation.NavigateTo("/estudiante/incidencias?estado=resuelto");
+    private void NuevaIncidencia() => Navigation.NavigateTo("/estudiante/incidencias/nuevo");
+    private void IrBaseConocimiento() => Navigation.NavigateTo("/estudiante/base-conocimiento");
 }
