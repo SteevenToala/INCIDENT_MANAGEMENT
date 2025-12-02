@@ -41,6 +41,7 @@ builder.Services.AddScoped<IComputadoraRepository, ComputadoraRepository>();
 // Add Application Services
 builder.Services.AddScoped<IIncidenteService, IncidenteService>();
 builder.Services.AddScoped<IBaseConocimientoService, BaseConocimientoService>();
+builder.Services.AddScoped<IEstudiantePortalService, EstudiantePortalService>();
 
 // Add HttpContextAccessor para acceder a cookies
 builder.Services.AddHttpContextAccessor();

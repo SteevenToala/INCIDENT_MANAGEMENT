@@ -1,0 +1,180 @@
+@page "/estudiante/incidencias"
+@attribute [Authorize(Roles = "Estudiante")]
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@inject IEstudiantePortalService EstudiantePortalService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Mis incidencias</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-8">
+    <MudStack Direction="Row" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+        <div>
+            <MudText Typo="Typo.h4">Mis incidencias</MudText>
+            <MudText Typo="Typo.subtitle2" Class="text-muted">Consulta y da seguimiento a todos tus reportes.</MudText>
+        </div>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.AddCircle" OnClick="GoToNuevaIncidencia">
+            Reportar incidencia
+        </MudButton>
+    </MudStack>
+
+    <MudPaper Elevation="2" Class="pa-4">
+        <MudGrid Class="mb-3" GutterSize="2">
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="searchText" Label="Buscar" Variant="Variant.Text" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true" Placeholder="Título, código o descripción" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="string" @bind-Value="estadoFiltro" Label="Estado" Dense="true">
+                    <MudSelectItem Value="@FiltroTodos">Todos</MudSelectItem>
+                    <MudSelectItem Value="@EstadoAbierto">Abiertos</MudSelectItem>
+                    <MudSelectItem Value="@EstadoEnProceso">En proceso</MudSelectItem>
+                    <MudSelectItem Value="@EstadoResuelto">Resueltos</MudSelectItem>
+                    <MudSelectItem Value="@EstadoCerrado">Cerrados</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
+
+        @if (isLoading)
+        {
+            <MudText Typo="Typo.body1" Class="text-muted">
+                <MudProgressCircular Indeterminate="true" Class="me-2" Color="Color.Primary" /> Cargando tus incidencias...
+            </MudText>
+        }
+        else if (!string.IsNullOrEmpty(loadError))
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled">@loadError</MudAlert>
+        }
+        else if (!FilteredIncidentes.Any())
+        {
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">No encontramos incidencias con los filtros actuales.</MudAlert>
+        }
+        else
+        {
+            <MudTable Items="FilteredIncidentes" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>Código</MudTh>
+                    <MudTh>Título</MudTh>
+                    <MudTh>Computadora</MudTh>
+                    <MudTh>Estado</MudTh>
+                    <MudTh>Prioridad</MudTh>
+                    <MudTh>Fecha</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Código">@context.CodigoIncidente</MudTd>
+                    <MudTd DataLabel="Título">@context.Titulo</MudTd>
+                    <MudTd DataLabel="Computadora">@context.ComputadoraNombre</MudTd>
+                    <MudTd DataLabel="Estado">
+                        <MudChip Color="@StatusColor(context.Estado)" Variant="Variant.Outlined">@context.Estado</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Prioridad">
+                        <MudChip Color="@PriorityColor(context.Prioridad)" Variant="Variant.Filled" Size="Size.Small">@context.Prioridad</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Fecha">@context.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private const string FiltroTodos = "todos";
+    private const string EstadoAbierto = "abierto";
+    private const string EstadoEnProceso = "en proceso";
+    private const string EstadoResuelto = "resuelto";
+    private const string EstadoCerrado = "cerrado";
+
+    private List<IncidenteDto> incidentes = new();
+    private string searchText = string.Empty;
+    private string estadoFiltro = FiltroTodos;
+    private bool isLoading = true;
+    private string? loadError;
+
+    private IEnumerable<IncidenteDto> FilteredIncidentes => incidentes
+        .Where(CumpleBusqueda)
+        .Where(CumpleEstado)
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        if (!user.IsInRole("Estudiante"))
+        {
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        var userId = user.GetUserId();
+        if (userId is null)
+        {
+            loadError = "No pudimos identificar tu usuario.";
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            incidentes = (await EstudiantePortalService.GetMisIncidentesAsync(userId.Value)).ToList();
+        }
+        catch (Exception ex)
+        {
+            loadError = "No se pudieron cargar tus incidencias.";
+            Console.WriteLine($"[Incidencias] Error: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private bool CumpleBusqueda(IncidenteDto incidente)
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            return true;
+        }
+
+        var term = searchText.Trim().ToLowerInvariant();
+        return incidente.Titulo.ToLowerInvariant().Contains(term)
+            || incidente.Descripcion.ToLowerInvariant().Contains(term)
+            || incidente.CodigoIncidente.ToLowerInvariant().Contains(term)
+            || incidente.ComputadoraNombre.ToLowerInvariant().Contains(term);
+    }
+
+    private bool CumpleEstado(IncidenteDto incidente)
+    {
+        if (estadoFiltro == FiltroTodos)
+        {
+            return true;
+        }
+
+        return incidente.Estado.Equals(estadoFiltro, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private Color StatusColor(string estado) => estado.ToLowerInvariant() switch
+    {
+        "abierto" => Color.Warning,
+        "en proceso" => Color.Info,
+        "resuelto" or "cerrado" => Color.Success,
+        _ => Color.Default
+    };
+
+    private Color PriorityColor(string prioridad) => prioridad.ToLowerInvariant() switch
+    {
+        "alta" => Color.Error,
+        "media" => Color.Warning,
+        "baja" => Color.Success,
+        _ => Color.Default
+    };
+
+    private void GoToNuevaIncidencia() => Navigation.NavigateTo("/estudiante/incidencias/nuevo");
+}
