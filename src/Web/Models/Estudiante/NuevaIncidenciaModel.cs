@@ -16,6 +16,6 @@ public class NuevaIncidenciaModel
     [StringLength(2000, ErrorMessage = "La descripción es demasiado larga")]
     public string Descripcion { get; set; } = string.Empty;
 
-    [Required]
+    [Required(ErrorMessage = "Selecciona una prioridad")]
     public string Prioridad { get; set; } = "Media";
 }

@@ -1,8 +1,6 @@
 @page "/estudiante/incidencias/nuevo"
 @attribute [Authorize(Roles = "Estudiante")]
 @rendermode InteractiveServer
-@using Microsoft.AspNetCore.Components.Web
-@using MudBlazor
 @inject IEstudiantePortalService EstudiantePortalService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
@@ -31,65 +29,46 @@
         <MudPaper Elevation="2" Class="pa-5">
             <EditForm Model="@formModel" OnValidSubmit="HandleValidSubmit">
                 <DataAnnotationsValidator />
-                <ValidationSummary />
 
-                <MudGrid GutterSize="2">
-                    <MudItem xs="12">
-                        <MudSelect T="int?"
-                                   @bind-Value="formModel.ComputadoraID"
-                                   Label="Computadora"
-                                   Variant="Variant.Outlined"
-                                   Dense="true"
-                                   FullWidth="true"
-                                   HelperText="Selecciona el equipo afectado"
-                                   Required="true"
-                                   Disabled="isSubmitting">
-                            <MudSelectItem Value="@( (int?)null )" Disabled="true">Selecciona una opción...</MudSelectItem>
-                            @foreach (var option in computadoras)
+                <MudStack Spacing="3">
+                        <label for="computadora-select">Computadora</label>
+                        <select id="computadora-select" class="form-control" @bind="formModel.ComputadoraID" required>
+                            <option value="">-- Selecciona una computadora --</option>
+                            @foreach (var comp in computadoras)
                             {
-                                <MudSelectItem T="int?" Value="@((int?)option.Id)">@option.Nombre (@option.Descripcion)</MudSelectItem>
+                                <option value="@comp.Id">@comp.Nombre - @comp.Descripcion</option>
                             }
-                        </MudSelect>
-                    </MudItem>
+                        </select>
 
-                    <MudItem xs="12">
-                        <MudTextField @bind-Value="formModel.Titulo"
-                                      Label="Título"
-                                      Variant="Variant.Outlined"
-                                      Required="true"
-                                      MaxLength="200"
-                                      FullWidth="true"
-                                      Disabled="isSubmitting" />
-                    </MudItem>
+                    <MudTextField @bind-Value="formModel.Titulo"
+                                  Label="Título"
+                                  Id="titulo-field"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="El título es obligatorio"
+                                  MaxLength="200" />
 
-                    <MudItem xs="12">
-                        <MudTextField @bind-Value="formModel.Descripcion"
-                                      Label="Descripción detallada"
-                                      Variant="Variant.Outlined"
-                                      Required="true"
-                                      Lines="4"
-                                      FullWidth="true"
-                                      Disabled="isSubmitting" />
-                    </MudItem>
+                    <MudTextField @bind-Value="formModel.Descripcion"
+                                  Label="Descripción detallada"
+                                  Id="descripcion-field"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="La descripción es obligatoria"
+                                  Lines="4" />
 
-                    <MudItem xs="12" sm="6">
-                        <MudSelect T="string"
-                                   @bind-Value="formModel.Prioridad"
-                                   Label="Prioridad"
-                                   Variant="Variant.Outlined"
-                                   Dense="true"
-                                   FullWidth="true"
-                                   Required="true"
-                                   Disabled="isSubmitting">
-                            <MudSelectItem T="string" Value="@PrioridadAlta">@PrioridadAlta</MudSelectItem>
-                            <MudSelectItem T="string" Value="@PrioridadMedia">@PrioridadMedia</MudSelectItem>
-                            <MudSelectItem T="string" Value="@PrioridadBaja">@PrioridadBaja</MudSelectItem>
-                        </MudSelect>
-                    </MudItem>
-                </MudGrid>
+                    <label for="prioridad-select">Prioridad</label>
+                    <select id="prioridad-select" class="form-control" @bind="formModel.Prioridad" required>
+                        <option value="Alta">Alta</option>
+                        <option value="Media">Media (Recomendada)</option>
+                        <option value="Baja">Baja</option>
+                    </select>
+                </MudStack>
 
                 <MudStack Direction="Row" Spacing="2" Class="mt-4">
-                    <MudButton Type="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="isSubmitting">
+                    <MudButton ButtonType="ButtonType.Submit" 
+                               Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               Disabled="isSubmitting">
                         @if (isSubmitting)
                         {
                             <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
@@ -101,7 +80,10 @@
                             <span>Enviar reporte</span>
                         }
                     </MudButton>
-                    <MudButton Variant="Variant.Text" Color="Color.Secondary" Disabled="isSubmitting" OnClick="Volver">
+                    <MudButton Variant="Variant.Text" 
+                               Color="Color.Secondary" 
+                               Disabled="isSubmitting" 
+                               OnClick="Volver">
                         Cancelar
                     </MudButton>
                 </MudStack>
@@ -111,16 +93,19 @@
 </MudContainer>
 
 @code {
-    private const string PrioridadAlta = "Alta";
-    private const string PrioridadMedia = "Media";
-    private const string PrioridadBaja = "Baja";
+    private const string prioridadAlta = "Alta";
+    private const string prioridadMedia = "Media";
+    private const string prioridadBaja = "Baja";
 
     private NuevaIncidenciaModel formModel = new();
     private List<ComputadoraOption> computadoras = new();
+    // MudSelect no necesita propiedad intermedia
     private bool isLoading = true;
     private bool isSubmitting;
     private string? loadError;
     private int? userId;
+
+    // MudSelect no necesita SearchFunc
 
     protected override async Task OnInitializedAsync()
     {
@@ -150,6 +135,12 @@
         try
         {
             computadoras = (await EstudiantePortalService.GetComputadorasAsync()).ToList();
+            Console.WriteLine($"[NuevaIncidencia] Computadoras cargadas: {computadoras.Count}");
+            foreach (var comp in computadoras)
+            {
+                Console.WriteLine($"  - ID: {comp.Id}, Nombre: {comp.Nombre}, Desc: {comp.Descripcion}");
+            }
+            
             if (!computadoras.Any())
             {
                 loadError = "Aún no hay computadoras configuradas. Contacta al administrador.";
@@ -159,6 +150,7 @@
         {
             loadError = "No pudimos cargar las computadoras disponibles.";
             Console.WriteLine($"[NuevaIncidencia] Error: {ex}");
+            Console.WriteLine($"[NuevaIncidencia] Stack: {ex.StackTrace}");
         }
         finally
         {
@@ -166,11 +158,17 @@
         }
     }
 
-    private async Task HandleValidSubmit(EditContext _)
+    private async Task HandleValidSubmit(EditContext context)
     {
         if (userId is null)
         {
             Snackbar.Add("No pudimos validar tu sesión. Inicia nuevamente.", Severity.Error);
+            return;
+        }
+
+        if (!formModel.ComputadoraID.HasValue)
+        {
+            Snackbar.Add("Debes seleccionar una computadora", Severity.Warning);
             return;
         }
 
@@ -184,7 +182,7 @@
         catch (Exception ex)
         {
             Snackbar.Add("No pudimos registrar la incidencia. Intenta más tarde.", Severity.Error);
-            Console.WriteLine($"[NuevaIncidencia] Error: {ex}");
+            Console.WriteLine($"[NuevaIncidencia] Error al crear: {ex}");
         }
         finally
         {
