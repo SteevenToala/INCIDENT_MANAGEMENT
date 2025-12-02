@@ -1,93 +1,100 @@
 using IncidentManagement.Application.DTOs;
 using IncidentManagement.Application.Interfaces;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Components.Authorization;
+using System.Security.Claims;
 
-namespace IncidentManagement.Web.Services;
+namespace Web.Services;
 
-public class AuthService : IAuthService
+public class AuthService
 {
     private readonly IUsuarioRepository _usuarioRepository;
-    private readonly CustomAuthenticationStateProvider _authStateProvider;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public AuthService(
         IUsuarioRepository usuarioRepository,
-        CustomAuthenticationStateProvider authStateProvider)
+        IHttpContextAccessor httpContextAccessor)
     {
         _usuarioRepository = usuarioRepository;
-        _authStateProvider = authStateProvider;
+        _httpContextAccessor = httpContextAccessor;
     }
 
-    public async Task<LoginResponse> LoginAsync(LoginRequest request)
+    public async Task<(bool Success, UsuarioDto? User, string Message)> LoginAsync(string email, string password)
     {
         try
         {
-            var usuario = await _usuarioRepository.GetByEmailAsync(request.Email);
+            var usuario = await _usuarioRepository.GetByEmailAsync(email);
 
             if (usuario == null)
             {
-                return new LoginResponse
-                {
-                    Success = false,
-                    Message = "El correo electrónico no está registrado"
-                };
+                return (false, null, "Email no encontrado");
             }
 
-            if (usuario.Contraseña != request.Password)
+            if (usuario.Contraseña != password)
             {
-                return new LoginResponse
-                {
-                    Success = false,
-                    Message = "La contraseña es incorrecta"
-                };
+                return (false, null, "Contraseña incorrecta");
             }
 
             if (!usuario.Activo)
             {
-                return new LoginResponse
-                {
-                    Success = false,
-                    Message = "Tu cuenta está desactivada. Contacta al administrador"
-                };
+                return (false, null, "Usuario inactivo");
             }
 
             var usuarioDto = new UsuarioDto
             {
                 UsuarioID = usuario.UsuarioID,
-                Email = usuario.Email,
                 NombreCompleto = usuario.NombreCompleto,
-                RolNombre = usuario.Rol.Nombre,
+                Email = usuario.Email,
                 RolID = usuario.RolID,
-                FacultadNombre = usuario.Facultad?.Nombre,
+                RolNombre = usuario.Rol?.Nombre ?? "Sin Rol",
                 FacultadID = usuario.FacultadID,
+                FacultadNombre = usuario.Facultad?.Nombre ?? "Sin Facultad",
                 EsAsignador = usuario.EsAsignador,
                 Activo = usuario.Activo
             };
 
-            await _authStateProvider.UpdateAuthenticationState(usuarioDto);
-
-            return new LoginResponse
+            // Crear claims para la cookie
+            var claims = new List<Claim>
             {
-                Success = true,
-                Message = "Login exitoso",
-                Usuario = usuarioDto
+                new Claim(ClaimTypes.NameIdentifier, usuario.UsuarioID.ToString()),
+                new Claim(ClaimTypes.Name, usuario.NombreCompleto),
+                new Claim(ClaimTypes.Email, usuario.Email),
+                new Claim(ClaimTypes.Role, usuario.Rol?.Nombre ?? "Usuario")
             };
+
+            var identity = new ClaimsIdentity(claims, "MyCookieAuth");
+            var principal = new ClaimsPrincipal(identity);
+
+            // Sign in con cookie
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext != null)
+            {
+                await httpContext.SignInAsync("MyCookieAuth", principal, new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+                });
+            }
+
+            Console.WriteLine($"[AuthService] Login exitoso: {usuario.Email}, Rol: {usuario.Rol?.Nombre}");
+
+            return (true, usuarioDto, "Login exitoso");
         }
         catch (Exception ex)
         {
-            return new LoginResponse
-            {
-                Success = false,
-                Message = $"Error al procesar el login: {ex.Message}"
-            };
+            Console.WriteLine($"[AuthService] Error en login: {ex.Message}");
+            return (false, null, $"Error: {ex.Message}");
         }
     }
 
     public async Task LogoutAsync()
     {
-        await _authStateProvider.UpdateAuthenticationState(null);
-    }
-
-    public async Task<UsuarioDto?> GetCurrentUserAsync()
-    {
-        return await _authStateProvider.GetCurrentUserAsync();
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext != null)
+        {
+            await httpContext.SignOutAsync("MyCookieAuth");
+        }
+        Console.WriteLine("[AuthService] Logout exitoso");
     }
 }

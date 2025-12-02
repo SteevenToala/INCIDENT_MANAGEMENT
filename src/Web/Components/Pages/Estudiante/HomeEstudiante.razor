@@ -1,280 +1,102 @@
 @page "/estudiante/home"
 @rendermode InteractiveServer
-@using IncidentManagement.Application.Interfaces
-@using IncidentManagement.Application.DTOs
-@using IncidentManagement.Web.Components.Layout
-@using Microsoft.AspNetCore.Components.Authorization
-@inject IAuthService AuthService
-@inject IIncidenteService IncidenteService
-@inject NavigationManager Navigation
-@inject ISnackbar Snackbar
 @inject AuthenticationStateProvider AuthStateProvider
-@layout Layout.MainLayout
+@inject NavigationManager Navigation
 
-<MudLayout>
-    <DashboardLayout UserName="@currentUser?.NombreCompleto" OnLogout="HandleLogout">
-        <MudNavLink Href="/estudiante/home" Icon="@Icons.Material.Filled.Home">Inicio</MudNavLink>
-        <MudNavLink Href="/estudiante/incidentes" Icon="@Icons.Material.Filled.BugReport">Mis Incidentes</MudNavLink>
-        <MudNavLink Href="/estudiante/nuevo-incidente" Icon="@Icons.Material.Filled.Add">Reportar Incidente</MudNavLink>
-        <MudNavLink Href="/estudiante/conocimientos" Icon="@Icons.Material.Filled.Book">Base de Conocimientos</MudNavLink>
-        <MudNavLink Href="/estudiante/notificaciones" Icon="@Icons.Material.Filled.Notifications">Notificaciones</MudNavLink>
-    </DashboardLayout>
+<PageTitle>Home Estudiante</PageTitle>
 
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 mb-4">
-            <MudPaper Elevation="0" Class="pa-6 mb-4" Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px;">
-                <MudText Typo="Typo.h3" Style="color: white; font-weight: 700;" Class="mb-2">
-                    <MudIcon Icon="@Icons.Material.Filled.WavingHand" Class="mr-2" Style="font-size: 2.5rem;" />
-                    ¡Bienvenido, @currentUser?.NombreCompleto!
-                </MudText>
-                <MudText Typo="Typo.h6" Style="color: rgba(255,255,255,0.9);">
-                    Panel de Control - Estudiante
-                </MudText>
-            </MudPaper>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+    <MudText Typo="Typo.h3" Class="mb-6">
+        <MudIcon Icon="@Icons.Material.Filled.Home" Class="me-2" />
+        Bienvenido, @userName
+    </MudText>
 
-            <MudGrid Spacing="3">
-                <MudItem xs="12" sm="6" md="3">
-                    <MudCard Elevation="4" Style="height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;">
-                        <MudCardContent Class="d-flex flex-column align-center justify-center pa-6">
-                            <MudIcon Icon="@Icons.Material.Filled.BugReport" Style="color: white; font-size: 3rem;" Class="mb-3" />
-                            <MudText Typo="Typo.h6" Style="color: white;">Incidentes Activos</MudText>
-                            <MudText Typo="Typo.h2" Style="color: white; font-weight: 700;">@incidentesActivos</MudText>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3">
+                <MudCardContent>
+                    <MudText Typo="Typo.h5">
+                        <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Primary" />
+                        Mis Incidencias
+                    </MudText>
+                    <MudText Typo="Typo.h3">0</MudText>
+                    <MudText Typo="Typo.body2">Reportadas</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary">Ver Todas</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
 
-                <MudItem xs="12" sm="6" md="3">
-                    <MudCard Elevation="4" Style="height: 100%; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 12px;">
-                        <MudCardContent Class="d-flex flex-column align-center justify-center pa-6">
-                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Style="color: white; font-size: 3rem;" Class="mb-3" />
-                            <MudText Typo="Typo.h6" Style="color: white;">Incidentes Resueltos</MudText>
-                            <MudText Typo="Typo.h2" Style="color: white; font-weight: 700;">@incidentesResueltos</MudText>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3">
+                <MudCardContent>
+                    <MudText Typo="Typo.h5">
+                        <MudIcon Icon="@Icons.Material.Filled.Pending" Color="Color.Warning" />
+                        Pendientes
+                    </MudText>
+                    <MudText Typo="Typo.h3">0</MudText>
+                    <MudText Typo="Typo.body2">Por resolver</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Warning">Ver Detalles</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
 
-                <MudItem xs="12" sm="6" md="3">
-                    <MudCard Elevation="4" Style="height: 100%; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px;">
-                        <MudCardContent Class="d-flex flex-column align-center justify-center pa-6">
-                            <MudIcon Icon="@Icons.Material.Filled.Timelapse" Style="color: white; font-size: 3rem;" Class="mb-3" />
-                            <MudText Typo="Typo.h6" Style="color: white;">En Progreso</MudText>
-                            <MudText Typo="Typo.h2" Style="color: white; font-weight: 700;">@incidentesEnProgreso</MudText>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3">
+                <MudCardContent>
+                    <MudText Typo="Typo.h5">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
+                        Resueltas
+                    </MudText>
+                    <MudText Typo="Typo.h3">0</MudText>
+                    <MudText Typo="Typo.body2">Completadas</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Success">Ver Historial</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
 
-                <MudItem xs="12" sm="6" md="3">
-                    <MudCard Elevation="4" Style="height: 100%; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px;">
-                        <MudCardContent Class="d-flex flex-column align-center justify-center pa-6">
-                            <MudIcon Icon="@Icons.Material.Filled.Assignment" Style="color: white; font-size: 3rem;" Class="mb-3" />
-                            <MudText Typo="Typo.h6" Style="color: white;">Total Reportados</MudText>
-                            <MudText Typo="Typo.h2" Style="color: white; font-weight: 700;">@totalIncidentes</MudText>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-            </MudGrid>
-
-            <MudPaper Class="pa-6 mt-4" Elevation="4" Style="border-radius: 12px;">
-                <div class="d-flex align-center mb-4">
-                    <MudIcon Icon="@Icons.Material.Filled.ListAlt" Color="Color.Primary" Class="mr-2" Style="font-size: 2rem;" />
-                    <MudText Typo="Typo.h5" Style="font-weight: 600;">Mis Últimos Incidentes</MudText>
-                </div>
-                
-                @if (incidentes == null)
-                {
-                    <div class="d-flex justify-center pa-8">
-                        <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
-                    </div>
-                }
-                else if (!incidentes.Any())
-                {
-                    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Info" Class="my-4">
-                        No has reportado incidentes aún. ¡Comienza reportando tu primer incidente!
-                    </MudAlert>
-                }
-                else
-                {
-                    <MudTable Items="@incidentes.Take(5)" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm" Elevation="0">
-                        <HeaderContent>
-                            <MudTh Style="font-weight: 600;">Código</MudTh>
-                            <MudTh Style="font-weight: 600;">Título</MudTh>
-                            <MudTh Style="font-weight: 600;">Estado</MudTh>
-                            <MudTh Style="font-weight: 600;">Prioridad</MudTh>
-                            <MudTh Style="font-weight: 600;">Fecha</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd DataLabel="Código"><strong>@context.CodigoIncidente</strong></MudTd>
-                            <MudTd DataLabel="Título">@context.Titulo</MudTd>
-                            <MudTd DataLabel="Estado">
-                                <MudChip Size="Size.Small" Color="GetEstadoColor(context.Estado)" Icon="@Icons.Material.Filled.Circle">@context.Estado</MudChip>
-                            </MudTd>
-                            <MudTd DataLabel="Prioridad">
-                                <MudChip Size="Size.Small" Color="GetPrioridadColor(context.Prioridad)" Icon="@Icons.Material.Filled.PriorityHigh">@context.Prioridad</MudChip>
-                            </MudTd>
-                            <MudTd DataLabel="Fecha">@context.FechaCreacion.ToString("dd/MM/yyyy")</MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                }
-            </MudPaper>
-
-            <MudGrid Class="mt-4" Spacing="3">
-                <MudItem xs="12" md="6">
-                    <MudCard Elevation="4" Style="height: 100%; border-radius: 12px; border-left: 4px solid #667eea;">
-                        <MudCardHeader Style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
-                            <CardHeaderContent>
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.Bolt" Color="Color.Primary" Class="mr-2" />
-                                    <MudText Typo="Typo.h6" Style="font-weight: 600;">Acciones Rápidas</MudText>
-                                </div>
-                            </CardHeaderContent>
-                        </MudCardHeader>
-                        <MudCardContent Class="pa-6">
-                            <MudButton Variant="Variant.Filled" 
-                                       Color="Color.Primary" 
-                                       FullWidth="true"
-                                       StartIcon="@Icons.Material.Filled.Add"
-                                       Class="mb-3"
-                                       Size="Size.Large"
-                                       Style="border-radius: 8px; text-transform: none; font-weight: 600;"
-                                       Href="/estudiante/nuevo-incidente">
-                                Reportar Nuevo Incidente
-                            </MudButton>
-                            <MudButton Variant="Variant.Outlined" 
-                                       Color="Color.Primary" 
-                                       FullWidth="true"
-                                       StartIcon="@Icons.Material.Filled.Book"
-                                       Size="Size.Large"
-                                       Style="border-radius: 8px; text-transform: none; font-weight: 600;"
-                                       Href="/estudiante/conocimientos">
-                                Buscar en Base de Conocimientos
-                            </MudButton>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-
-                <MudItem xs="12" md="6">
-                    <MudCard Elevation="4" Style="height: 100%; border-radius: 12px; border-left: 4px solid #38ef7d;">
-                        <MudCardHeader Style="background: linear-gradient(135deg, rgba(17, 153, 142, 0.1) 0%, rgba(56, 239, 125, 0.1) 100%);">
-                            <CardHeaderContent>
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Success" Class="mr-2" />
-                                    <MudText Typo="Typo.h6" Style="font-weight: 600;">Información del Usuario</MudText>
-                                </div>
-                            </CardHeaderContent>
-                        </MudCardHeader>
-                        <MudCardContent Class="pa-6">
-                            <MudStack Spacing="3">
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.School" Color="Color.Primary" Class="mr-2" />
-                                    <MudText Typo="Typo.body1"><strong>Facultad:</strong> @currentUser?.FacultadNombre</MudText>
-                                </div>
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.Badge" Color="Color.Secondary" Class="mr-2" />
-                                    <MudText Typo="Typo.body1"><strong>Rol:</strong> @currentUser?.RolNombre</MudText>
-                                </div>
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.Email" Color="Color.Info" Class="mr-2" />
-                                    <MudText Typo="Typo.body1"><strong>Email:</strong> @currentUser?.Email</MudText>
-                                </div>
-                            </MudStack>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-            </MudGrid>
-        </MudContainer>
-    </MudMainContent>
-</MudLayout>
+    <MudPaper Elevation="3" Class="mt-6 pa-6">
+        <MudText Typo="Typo.h5" Class="mb-4">Acciones Rápidas</MudText>
+        <MudStack Row="true" Spacing="3">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add">
+                Nueva Incidencia
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.Book">
+                Base de Conocimiento
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
 
 @code {
-    private UsuarioDto? currentUser;
-    private IEnumerable<IncidenteDto> incidentes = new List<IncidenteDto>();
-    private int incidentesActivos = 0;
-    private int incidentesResueltos = 0;
-    private int incidentesEnProgreso = 0;
-    private int totalIncidentes = 0;
-    private bool isLoading = false;
+    private string userName = "";
 
     protected override async Task OnInitializedAsync()
     {
-        try
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
         {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-
-            if (user?.Identity?.IsAuthenticated != true)
-            {
-                Navigation.NavigateTo("/login", forceLoad: true);
-                return;
-            }
-
-            currentUser = await AuthService.GetCurrentUserAsync();
-            
-            if (currentUser == null)
-            {
-                Navigation.NavigateTo("/login", forceLoad: true);
-                return;
-            }
-
-            await LoadData();
+            Navigation.NavigateTo("/login");
+            return;
         }
-        catch
-        {
-            Navigation.NavigateTo("/login", forceLoad: true);
-        }
-    }
 
-    private async Task LoadData()
-    {
-        isLoading = true;
-        try
+        // Verificar rol
+        if (!user.IsInRole("Estudiante"))
         {
-            incidentes = await IncidenteService.GetMisIncidentesAsync(currentUser!.UsuarioID);
-            totalIncidentes = incidentes.Count();
-            incidentesActivos = incidentes.Count(i => i.Estado == "Abierto");
-            incidentesResueltos = incidentes.Count(i => i.Estado == "Resuelto" || i.Estado == "Cerrado");
-            incidentesEnProgreso = incidentes.Count(i => i.Estado == "En Progreso");
+            Console.WriteLine($"[HomeEstudiante] Usuario no tiene rol Estudiante, redirigiendo");
+            Navigation.NavigateTo("/login");
+            return;
         }
-        catch (HttpRequestException)
-        {
-            Snackbar.Add("❌ No se puede conectar al servidor de base de datos", Severity.Error);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"❌ Error al cargar tus incidentes: {ex.Message}", Severity.Error);
-            Console.WriteLine($"Error en LoadData: {ex}");
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
 
-    private async Task HandleLogout()
-    {
-        await AuthService.LogoutAsync();
-        Navigation.NavigateTo("/login");
-    }
-
-    private Color GetEstadoColor(string estado)
-    {
-        return estado switch
-        {
-            "Abierto" => Color.Info,
-            "En Progreso" => Color.Warning,
-            "Resuelto" => Color.Success,
-            "Cerrado" => Color.Success,
-            _ => Color.Default
-        };
-    }
-
-    private Color GetPrioridadColor(string prioridad)
-    {
-        return prioridad switch
-        {
-            "Alta" => Color.Error,
-            "Media" => Color.Warning,
-            "Baja" => Color.Info,
-            _ => Color.Default
-        };
+        userName = user.Identity?.Name ?? "Usuario";
+        Console.WriteLine($"[HomeEstudiante] Autenticado: {userName}");
     }
 }
