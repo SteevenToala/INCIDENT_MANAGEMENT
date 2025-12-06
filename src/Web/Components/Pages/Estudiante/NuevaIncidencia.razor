@@ -200,12 +200,12 @@ public class LaboratorioOption
         try
         {
             await EstudiantePortalService.CrearIncidenteAsync(formModel, userId.Value);
-            Snackbar.Add("Incidencia registrada con éxito", Severity.Success);
+            Snackbar.Add("Incidente registrado con éxito", Severity.Success);
             Navigation.NavigateTo("/estudiante/incidencias");
         }
         catch (Exception ex)
         {
-            Snackbar.Add("No pudimos registrar la incidencia. Intenta más tarde.", Severity.Error);
+            Snackbar.Add("No pudimos registrar el incidente. Intenta más tarde.", Severity.Error);
             Console.WriteLine($"[NuevaIncidencia] Error al crear: {ex}");
         }
         finally

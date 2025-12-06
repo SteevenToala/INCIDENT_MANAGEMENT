@@ -16,7 +16,7 @@
             <MudText Typo="Typo.subtitle2" Class="text-muted">Consulta y da seguimiento a todos tus reportes.</MudText>
         </div>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.AddCircle" OnClick="GoToNuevaIncidencia">
-            Reportar incidencia
+            Reportar incidente
         </MudButton>
     </MudStack>
 
@@ -39,7 +39,7 @@
         @if (isLoading)
         {
             <MudText Typo="Typo.body1" Class="text-muted">
-                <MudProgressCircular Indeterminate="true" Class="me-2" Color="Color.Primary" /> Cargando tus incidencias...
+                <MudProgressCircular Indeterminate="true" Class="me-2" Color="Color.Primary" /> Cargando tus incidentes...
             </MudText>
         }
         else if (!string.IsNullOrEmpty(loadError))
@@ -48,7 +48,7 @@
         }
         else if (!FilteredIncidentes.Any())
         {
-            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">No encontramos incidencias con los filtros actuales.</MudAlert>
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">No encontramos incidentes con los filtros actuales.</MudAlert>
         }
         else
         {
@@ -127,7 +127,7 @@
         }
         catch (Exception ex)
         {
-            loadError = "No se pudieron cargar tus incidencias.";
+            loadError = "No se pudieron cargar tus incidentes.";
             Console.WriteLine($"[Incidencias] Error: {ex}");
         }
         finally

@@ -9,10 +9,10 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<PageTitle>Actualizar Incidencia</PageTitle>
+<PageTitle>Actualizar Incidente</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-4">Actualizar Estado de Incidencia</MudText>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Actualizar Estado de Incidente</MudText>
 
     @if (isLoading)
     {
@@ -26,7 +26,7 @@
     {
         <MudPaper Elevation="2" Class="pa-4 mb-4">
             <MudStack Spacing="2">
-                <MudText Typo="Typo.h6">Detalles de la Incidencia</MudText>
+                <MudText Typo="Typo.h6">Detalles del Incidente</MudText>
                 <MudDivider />
                 
                 <MudStack Row="true" Spacing="2">
@@ -123,7 +123,7 @@
 
         if (!IncidenteId.HasValue)
         {
-            errorMessage = "No se especificó una incidencia.";
+            errorMessage = "No se especificó un incidente.";
             isLoading = false;
             return;
         }
@@ -142,18 +142,18 @@
             
             if (incidente == null)
             {
-                errorMessage = "La incidencia no existe.";
+                errorMessage = "El incidente no existe.";
                 return;
             }
 
-            // Los laboratoristas pueden actualizar cualquier incidencia
+            // Los laboratoristas pueden actualizar cualquier incidente
             // En el futuro se puede agregar validación de asignación si es necesario
             
             formModel.Estado = incidente.Estado;
         }
         catch (Exception ex)
         {
-            errorMessage = "Error al cargar la incidencia.";
+            errorMessage = "Error al cargar el incidente.";
             Console.WriteLine($"[ActualizarIncidencia] Error: {ex.Message}");
         }
         finally

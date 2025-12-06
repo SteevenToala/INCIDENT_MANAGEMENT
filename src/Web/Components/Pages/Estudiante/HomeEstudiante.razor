@@ -42,7 +42,7 @@
                         <MudStack Spacing="1">
                             <MudText Typo="Typo.h6">
                                 <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Primary" Class="me-1" />
-                                Mis incidencias
+                                Mis incidentes
                             </MudText>
                             <MudText Typo="Typo.h3">@dashboard.Counters.Total</MudText>
                             <MudText Typo="Typo.caption" Class="text-muted">Reportadas en total</MudText>
@@ -113,13 +113,13 @@
             <MudItem xs="12" md="8">
                 <MudPaper Elevation="3" Class="pa-4 h-100">
                     <MudStack Direction="Row" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
-                        <MudText Typo="Typo.h5">Últimas incidencias</MudText>
+                        <MudText Typo="Typo.h5">Últimos incidentes</MudText>
                         <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" OnClick="VerIncidencias">Ver todas</MudButton>
                     </MudStack>
 
                     @if (!dashboard.UltimasIncidencias.Any())
                     {
-                        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">Aún no has registrado incidencias.</MudAlert>
+                        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">Aún no has registrado incidentes.</MudAlert>
                     }
                     else
                     {
@@ -144,7 +144,7 @@
                 <MudPaper Elevation="3" Class="pa-4 h-100">
                     <MudText Typo="Typo.h5" Class="mb-3">Acciones rápidas</MudText>
                     <MudStack Spacing="2">
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NuevaIncidencia">Nueva incidencia</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NuevaIncidencia">Nuevo incidente</MudButton>
                         <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.MenuBook" OnClick="IrBaseConocimiento">Base de conocimiento</MudButton>
                     </MudStack>
                 </MudPaper>
