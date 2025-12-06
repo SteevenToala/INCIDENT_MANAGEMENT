@@ -32,10 +32,22 @@ public class IncidenteService : IIncidenteService
         return incidentes.Select(MapToDto);
     }
 
+    public async Task<IEnumerable<IncidenteDto>> GetIncidentesByTecnicoAsync(int tecnicoId)
+    {
+        // Obtener todas las incidencias para que el laboratorista pueda verlas y asignarlas
+        var incidentes = await _incidenteRepository.GetAllAsync();
+        return incidentes.Select(MapToDto);
+    }
+
     public async Task<IncidenteDto?> GetIncidenteByIdAsync(int id)
     {
         var incidente = await _incidenteRepository.GetByIdAsync(id);
         return incidente != null ? MapToDto(incidente) : null;
+    }
+
+    public async Task<IncidenteDto?> GetByIdAsync(int id)
+    {
+        return await GetIncidenteByIdAsync(id);
     }
 
     public async Task<IncidenteDto> CreateIncidenteAsync(CreateIncidenteDto dto, int usuarioId)
@@ -104,6 +116,21 @@ public class IncidenteService : IIncidenteService
         await _incidenteRepository.UpdateAsync(incidente);
     }
 
+    public async Task ActualizarEstadoAsync(ActualizarEstadoDto dto)
+    {
+        var incidente = await _incidenteRepository.GetByIdAsync(dto.IncidenteID);
+        if (incidente == null)
+            throw new Exception("Incidente no encontrado");
+
+        incidente.Estado = dto.Estado;
+        incidente.FechaActualizacion = DateTime.Now;
+
+        if (dto.Estado == "Cerrado" || dto.Estado == "Resuelto")
+            incidente.FechaResolucion = DateTime.Now;
+
+        await _incidenteRepository.UpdateAsync(incidente);
+    }
+
     private IncidenteDto MapToDto(Incidente incidente)
     {
         return new IncidenteDto
@@ -114,11 +141,14 @@ public class IncidenteService : IIncidenteService
             Descripcion = incidente.Descripcion,
             Prioridad = incidente.Prioridad,
             Estado = incidente.Estado,
+            FechaReporte = incidente.FechaCreacion,
             FechaCreacion = incidente.FechaCreacion,
             FechaResolucion = incidente.FechaResolucion,
+            TecnicoID = incidente.Asignaciones.FirstOrDefault(a => a.FechaCompletacion == null)?.UsuarioAsignadoID,
             ComputadoraNombre = incidente.Computadora?.CodigoEquipo ?? "",
             LaboratorioNombre = incidente.Laboratorio?.Nombre ?? "",
-            UsuarioReportador = incidente.UsuarioReportador?.NombreCompleto ?? ""
+            UsuarioReportador = incidente.UsuarioReportador?.NombreCompleto ?? "",
+            EstudianteNombre = incidente.UsuarioReportador?.NombreCompleto ?? ""
         };
     }
 

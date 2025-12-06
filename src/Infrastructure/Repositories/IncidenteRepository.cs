@@ -25,6 +25,7 @@ public class IncidenteRepository : IIncidenteRepository
             .Include(i => i.Laboratorio)
             .Include(i => i.Facultad)
             .Include(i => i.Servicio)
+            .Include(i => i.Asignaciones)
             .FirstOrDefaultAsync(i => i.IncidenteID == id && !i.Eliminado);
     }
 
@@ -47,6 +48,7 @@ public class IncidenteRepository : IIncidenteRepository
                 .ThenInclude(c => c.Laboratorio)
             .Include(i => i.UsuarioReportador)
             .Include(i => i.Laboratorio)
+            .Include(i => i.Asignaciones)
             .Where(i => !i.Eliminado)
             .OrderByDescending(i => i.FechaCreacion)
             .ToListAsync();
@@ -61,6 +63,7 @@ public class IncidenteRepository : IIncidenteRepository
                 .ThenInclude(c => c.Laboratorio)
             .Include(i => i.UsuarioReportador)
             .Include(i => i.Laboratorio)
+            .Include(i => i.Asignaciones)
             .Where(i => i.UsuarioReportadorID == usuarioId && !i.Eliminado)
             .OrderByDescending(i => i.FechaCreacion)
             .ToListAsync();
@@ -99,7 +102,20 @@ public class IncidenteRepository : IIncidenteRepository
 
     public async Task UpdateAsync(Incidente incidente)
     {
-        _context.Entry(incidente).State = EntityState.Modified;
+        // Buscar la entidad existente en el contexto
+        var existingIncidente = await _context.Incidentes.FindAsync(incidente.IncidenteID);
+        
+        if (existingIncidente == null)
+            throw new Exception("Incidente no encontrado");
+
+        // Actualizar las propiedades necesarias
+        existingIncidente.Estado = incidente.Estado;
+        existingIncidente.Prioridad = incidente.Prioridad;
+        existingIncidente.Descripcion = incidente.Descripcion;
+        existingIncidente.FechaActualizacion = incidente.FechaActualizacion;
+        existingIncidente.FechaResolucion = incidente.FechaResolucion;
+        existingIncidente.Eliminado = incidente.Eliminado;
+        
         await _context.SaveChangesAsync();
     }
 

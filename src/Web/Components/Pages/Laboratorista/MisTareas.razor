@@ -1,0 +1,213 @@
+@page "/laboratorista/asignaciones"
+@attribute [Authorize(Roles = "Laboratorista")]
+@rendermode InteractiveServer
+@using MudBlazor
+@using IncidentManagement.Application.Interfaces
+@using IncidentManagement.Application.DTOs
+@inject IIncidenteService IncidenteService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Mis Tareas Asignadas</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Gestión de Incidencias</MudText>
+
+    @if (isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+    }
+    else
+    {
+        <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+            <MudTabPanel Text="Pendientes" Icon="@Icons.Material.Filled.HourglassEmpty" BadgeData="@incidentesPendientes.Count">
+                <MudTable Items="@incidentesPendientes" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true">
+                    <HeaderContent>
+                        <MudTh>ID</MudTh>
+                        <MudTh>Código</MudTh>
+                        <MudTh>Título</MudTh>
+                        <MudTh>Prioridad</MudTh>
+                        <MudTh>Estudiante</MudTh>
+                        <MudTh>Computadora</MudTh>
+                        <MudTh>Laboratorio</MudTh>
+                        <MudTh>Fecha</MudTh>
+                        <MudTh>Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="ID">@context.IncidenteID</MudTd>
+                        <MudTd DataLabel="Código">@context.CodigoIncidente</MudTd>
+                        <MudTd DataLabel="Título">@context.Titulo</MudTd>
+                        <MudTd DataLabel="Prioridad">
+                            <MudChip Color="@GetPriorityColor(context.Prioridad)" Size="Size.Small">@context.Prioridad</MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Estudiante">@context.EstudianteNombre</MudTd>
+                        <MudTd DataLabel="Computadora">@context.ComputadoraNombre</MudTd>
+                        <MudTd DataLabel="Laboratorio">@context.LaboratorioNombre</MudTd>
+                        <MudTd DataLabel="Fecha">@context.FechaReporte.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                        <MudTd DataLabel="Acciones">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="@(() => VerDetalle(context.IncidenteID))">
+                                Ver Detalle
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidencias pendientes.</MudText>
+                    </NoRecordsContent>
+                </MudTable>
+            </MudTabPanel>
+            
+            <MudTabPanel Text="En Proceso" Icon="@Icons.Material.Filled.Build" BadgeData="@incidentesEnProceso.Count">
+                <MudTable Items="@incidentesEnProceso" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true">
+                    <HeaderContent>
+                        <MudTh>ID</MudTh>
+                        <MudTh>Código</MudTh>
+                        <MudTh>Título</MudTh>
+                        <MudTh>Prioridad</MudTh>
+                        <MudTh>Estudiante</MudTh>
+                        <MudTh>Computadora</MudTh>
+                        <MudTh>Laboratorio</MudTh>
+                        <MudTh>Fecha</MudTh>
+                        <MudTh>Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="ID">@context.IncidenteID</MudTd>
+                        <MudTd DataLabel="Código">@context.CodigoIncidente</MudTd>
+                        <MudTd DataLabel="Título">@context.Titulo</MudTd>
+                        <MudTd DataLabel="Prioridad">
+                            <MudChip Color="@GetPriorityColor(context.Prioridad)" Size="Size.Small">@context.Prioridad</MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Estudiante">@context.EstudianteNombre</MudTd>
+                        <MudTd DataLabel="Computadora">@context.ComputadoraNombre</MudTd>
+                        <MudTd DataLabel="Laboratorio">@context.LaboratorioNombre</MudTd>
+                        <MudTd DataLabel="Fecha">@context.FechaReporte.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                        <MudTd DataLabel="Acciones">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="@(() => VerDetalle(context.IncidenteID))">
+                                Ver Detalle
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidencias en proceso.</MudText>
+                    </NoRecordsContent>
+                </MudTable>
+            </MudTabPanel>
+            
+            <MudTabPanel Text="Resueltas" Icon="@Icons.Material.Filled.CheckCircle" BadgeData="@incidentesResueltas.Count">
+                <MudTable Items="@incidentesResueltas" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true">
+                    <HeaderContent>
+                        <MudTh>ID</MudTh>
+                        <MudTh>Código</MudTh>
+                        <MudTh>Título</MudTh>
+                        <MudTh>Prioridad</MudTh>
+                        <MudTh>Estudiante</MudTh>
+                        <MudTh>Computadora</MudTh>
+                        <MudTh>Laboratorio</MudTh>
+                        <MudTh>Fecha</MudTh>
+                        <MudTh>Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="ID">@context.IncidenteID</MudTd>
+                        <MudTd DataLabel="Código">@context.CodigoIncidente</MudTd>
+                        <MudTd DataLabel="Título">@context.Titulo</MudTd>
+                        <MudTd DataLabel="Prioridad">
+                            <MudChip Color="@GetPriorityColor(context.Prioridad)" Size="Size.Small">@context.Prioridad</MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Estudiante">@context.EstudianteNombre</MudTd>
+                        <MudTd DataLabel="Computadora">@context.ComputadoraNombre</MudTd>
+                        <MudTd DataLabel="Laboratorio">@context.LaboratorioNombre</MudTd>
+                        <MudTd DataLabel="Fecha">@context.FechaReporte.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                        <MudTd DataLabel="Acciones">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="@(() => VerDetalle(context.IncidenteID))">
+                                Ver Detalle
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidencias resueltas.</MudText>
+                    </NoRecordsContent>
+                </MudTable>
+            </MudTabPanel>
+        </MudTabs>
+    }
+</MudContainer>
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+    private int? userId;
+    
+    private List<IncidenteDto> incidentesPendientes = new();
+    private List<IncidenteDto> incidentesEnProceso = new();
+    private List<IncidenteDto> incidentesResueltas = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        userId = user.GetUserId();
+        if (userId is null)
+        {
+            errorMessage = "No se pudo identificar al usuario.";
+            isLoading = false;
+            return;
+        }
+
+        await CargarIncidencias();
+    }
+
+    private async Task CargarIncidencias()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            // Por ahora mostramos todas las incidencias para que el laboratorista pueda trabajar
+            var todasIncidencias = await IncidenteService.GetAllIncidentesAsync();
+            
+            Console.WriteLine($"[MisTareas] Total incidencias: {todasIncidencias.Count()}");
+            
+            incidentesPendientes = todasIncidencias.Where(i => i.Estado == "Pendiente" || i.Estado == "Abierto").ToList();
+            incidentesEnProceso = todasIncidencias.Where(i => i.Estado == "En Proceso").ToList();
+            incidentesResueltas = todasIncidencias.Where(i => i.Estado == "Resuelto" || i.Estado == "Cerrado").ToList();
+            
+            Console.WriteLine($"[MisTareas] Pendientes: {incidentesPendientes.Count}, En Proceso: {incidentesEnProceso.Count}, Resueltas: {incidentesResueltas.Count}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al cargar las incidencias asignadas.";
+            Console.WriteLine($"[MisTareas] Error: {ex.Message}");
+            Console.WriteLine($"[MisTareas] Stack: {ex.StackTrace}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void VerDetalle(int incidenteId)
+    {
+        Navigation.NavigateTo($"/laboratorista/asignaciones/actualizar?id={incidenteId}");
+    }
+
+    private Color GetPriorityColor(string prioridad)
+    {
+        return prioridad switch
+        {
+            "Alta" => Color.Error,
+            "Media" => Color.Warning,
+            _ => Color.Info
+        };
+    }
+}

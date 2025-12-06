@@ -1,0 +1,212 @@
+@page "/laboratorista/asignaciones/actualizar"
+@attribute [Authorize(Roles = "Laboratorista")]
+@rendermode InteractiveServer
+@using MudBlazor
+@using IncidentManagement.Application.Interfaces
+@using IncidentManagement.Application.DTOs
+@inject IIncidenteService IncidenteService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Actualizar Incidencia</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Actualizar Estado de Incidencia</MudText>
+
+    @if (isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+    }
+    else if (incidente != null)
+    {
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.h6">Detalles de la Incidencia</MudText>
+                <MudDivider />
+                
+                <MudStack Row="true" Spacing="2">
+                    <MudText><strong>ID:</strong> @incidente.IncidenteID</MudText>
+                    <MudChip Color="@GetPrioridadColor(incidente.Prioridad)" Size="Size.Small">@incidente.Prioridad</MudChip>
+                </MudStack>
+                
+                <MudText><strong>Título:</strong> @incidente.Titulo</MudText>
+                <MudText><strong>Descripción:</strong> @incidente.Descripcion</MudText>
+                <MudText><strong>Estudiante:</strong> @incidente.EstudianteNombre</MudText>
+                <MudText><strong>Computadora:</strong> @incidente.ComputadoraNombre</MudText>
+                <MudText><strong>Fecha de Reporte:</strong> @incidente.FechaReporte.ToString("dd/MM/yyyy HH:mm")</MudText>
+                <MudText><strong>Estado Actual:</strong> @incidente.Estado</MudText>
+            </MudStack>
+        </MudPaper>
+
+        <MudPaper Elevation="2" Class="pa-4">
+            <EditForm Model="@formModel" OnValidSubmit="ActualizarEstado">
+                <DataAnnotationsValidator />
+                
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Actualizar Estado</MudText>
+                    
+                    <div>
+                        <label for="estado-select">Nuevo Estado</label>
+                        <select id="estado-select" class="form-control" @bind="formModel.Estado" required>
+                            <option value="">-- Seleccionar --</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="En Proceso">En Proceso</option>
+                            <option value="Resuelto">Resuelto</option>
+                            <option value="Cerrado">Cerrado</option>
+                        </select>
+                    </div>
+
+                    <MudTextField @bind-Value="formModel.Comentarios"
+                                  Label="Comentarios / Notas"
+                                  Variant="Variant.Outlined"
+                                  Lines="4"
+                                  Placeholder="Describe las acciones realizadas o cualquier nota relevante..." />
+
+                    <MudStack Direction="Row" Spacing="2">
+                        <MudButton ButtonType="ButtonType.Submit" 
+                                   Variant="Variant.Filled" 
+                                   Color="Color.Success" 
+                                   Disabled="isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                                <span>Actualizando...</span>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Save" Class="me-2" />
+                                <span>Guardar Cambios</span>
+                            }
+                        </MudButton>
+                        
+                        <MudButton Variant="Variant.Text" 
+                                   Color="Color.Default" 
+                                   OnClick="Volver"
+                                   Disabled="isSubmitting">
+                            Volver
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </EditForm>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [SupplyParameterFromQuery(Name = "id")]
+    public int? IncidenteId { get; set; }
+
+    private IncidenteDto? incidente;
+    private ActualizarEstadoModel formModel = new();
+    private bool isLoading = true;
+    private bool isSubmitting;
+    private string? errorMessage;
+    private int? userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        userId = user.GetUserId();
+
+        if (!IncidenteId.HasValue)
+        {
+            errorMessage = "No se especificó una incidencia.";
+            isLoading = false;
+            return;
+        }
+
+        await CargarIncidencia();
+    }
+
+    private async Task CargarIncidencia()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            incidente = await IncidenteService.GetByIdAsync(IncidenteId!.Value);
+            
+            if (incidente == null)
+            {
+                errorMessage = "La incidencia no existe.";
+                return;
+            }
+
+            // Los laboratoristas pueden actualizar cualquier incidencia
+            // En el futuro se puede agregar validación de asignación si es necesario
+            
+            formModel.Estado = incidente.Estado;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al cargar la incidencia.";
+            Console.WriteLine($"[ActualizarIncidencia] Error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ActualizarEstado()
+    {
+        if (incidente == null) return;
+
+        isSubmitting = true;
+        try
+        {
+            var updateDto = new ActualizarEstadoDto
+            {
+                IncidenteID = incidente.IncidenteID,
+                Estado = formModel.Estado,
+                Comentarios = formModel.Comentarios
+            };
+
+            await IncidenteService.ActualizarEstadoAsync(updateDto);
+            
+            Snackbar.Add("Estado actualizado exitosamente", Severity.Success);
+            Navigation.NavigateTo("/laboratorista/asignaciones");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error al actualizar el estado", Severity.Error);
+            Console.WriteLine($"[ActualizarIncidencia] Error: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/laboratorista/asignaciones");
+    }
+
+    private Color GetPrioridadColor(string prioridad) => prioridad switch
+    {
+        "Alta" => Color.Error,
+        "Media" => Color.Warning,
+        _ => Color.Info
+    };
+
+    public class ActualizarEstadoModel
+    {
+        public string Estado { get; set; } = string.Empty;
+        public string? Comentarios { get; set; }
+    }
+}

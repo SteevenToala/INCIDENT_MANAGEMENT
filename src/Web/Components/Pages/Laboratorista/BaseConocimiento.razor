@@ -1,0 +1,144 @@
+@page "/laboratorista/base-conocimiento"
+@attribute [Authorize(Roles = "Laboratorista")]
+@rendermode InteractiveServer
+@using MudBlazor
+@using IncidentManagement.Application.Interfaces
+@using IncidentManagement.Application.DTOs
+@inject IBaseConocimientoService BaseConocimientoService
+@inject NavigationManager Navigation
+
+<PageTitle>Base de Conocimiento</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Base de Conocimiento</MudText>
+
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <MudTextField @bind-Value="searchQuery"
+                          Label="Buscar solución"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          OnKeyUp="@(async (KeyboardEventArgs e) => { if (e.Key == "Enter") await Buscar(); })"
+                          FullWidth="true" />
+            
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       OnClick="Buscar"
+                       Disabled="isSearching">
+                @if (isSearching)
+                {
+                    <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Search" Class="me-2" />
+                }
+                Buscar
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+
+    @if (isSearching)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+    }
+    else if (resultados.Any())
+    {
+        <MudText Typo="Typo.subtitle1" Class="mb-3">@resultados.Count resultado(s) encontrado(s)</MudText>
+        
+        <MudStack Spacing="3">
+            @foreach (var item in resultados)
+            {
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@item.Titulo</MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            <MudChip Size="Size.Small" Color="Color.Info">@item.Categoria</MudChip>
+                        </CardHeaderActions>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudText Typo="Typo.body2" Class="mb-2">
+                            <strong>Problema:</strong> @item.Problema
+                        </MudText>
+                        <MudDivider Class="my-2" />
+                        <MudText Typo="Typo.body2">
+                            <strong>Solución:</strong> @item.Solucion
+                        </MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Creado: @item.FechaCreacion.ToString("dd/MM/yyyy") | Efectividad: @item.Efectividad%
+                        </MudText>
+                    </MudCardActions>
+                </MudCard>
+            }
+        </MudStack>
+    }
+    else if (hasSearched)
+    {
+        <MudAlert Severity="Severity.Info">
+            No se encontraron resultados para tu búsqueda.
+        </MudAlert>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Info">
+            Utiliza el buscador para encontrar soluciones en la base de conocimiento.
+        </MudAlert>
+    }
+</MudContainer>
+
+@code {
+    private string searchQuery = string.Empty;
+    private List<BaseConocimientoDto> resultados = new();
+    private bool isSearching;
+    private bool hasSearched;
+    private string? errorMessage;
+
+    private async Task Buscar()
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery))
+        {
+            resultados = await CargarTodos();
+            hasSearched = true;
+            return;
+        }
+
+        isSearching = true;
+        errorMessage = null;
+        hasSearched = true;
+
+        try
+        {
+            resultados = (await BaseConocimientoService.SearchAsync(searchQuery)).ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al buscar en la base de conocimiento.";
+            Console.WriteLine($"[BaseConocimiento] Error: {ex.Message}");
+        }
+        finally
+        {
+            isSearching = false;
+        }
+    }
+
+    private async Task<List<BaseConocimientoDto>> CargarTodos()
+    {
+        try
+        {
+            return (await BaseConocimientoService.GetAllAsync()).ToList();
+        }
+        catch
+        {
+            return new List<BaseConocimientoDto>();
+        }
+    }
+}
