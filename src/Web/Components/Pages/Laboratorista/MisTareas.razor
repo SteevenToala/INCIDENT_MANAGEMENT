@@ -25,16 +25,24 @@
     {
         <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
             <MudTabPanel Text="Pendientes" Icon="@Icons.Material.Filled.HourglassEmpty" BadgeData="@incidentesPendientes.Count">
-                <MudTable Items="@incidentesPendientes" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true">
+                <MudTable Items="@incidentesPendientes" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true" 
+                          Filter="new Func<IncidenteDto, bool>(FilterFunc)" 
+                          SortLabel="Ordenar por">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">Incidentes Pendientes</MudText>
+                        <MudSpacer />
+                        <MudTextField @bind-Value="searchString" Placeholder="Buscar" Adornment="Adornment.Start" 
+                                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    </ToolBarContent>
                     <HeaderContent>
-                        <MudTh>ID</MudTh>
-                        <MudTh>Código</MudTh>
-                        <MudTh>Título</MudTh>
-                        <MudTh>Prioridad</MudTh>
-                        <MudTh>Estudiante</MudTh>
-                        <MudTh>Computadora</MudTh>
-                        <MudTh>Laboratorio</MudTh>
-                        <MudTh>Fecha</MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.IncidenteID)">ID</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.CodigoIncidente)">Código</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Titulo)">Título</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Prioridad)">Prioridad</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.EstudianteNombre)">Estudiante</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.ComputadoraNombre)">Computadora</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.LaboratorioNombre)">Laboratorio</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.FechaReporte)">Fecha</MudTableSortLabel></MudTh>
                         <MudTh>Acciones</MudTh>
                     </HeaderContent>
                     <RowTemplate>
@@ -54,6 +62,9 @@
                             </MudButton>
                         </MudTd>
                     </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager />
+                    </PagerContent>
                     <NoRecordsContent>
                         <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes pendientes.</MudText>
                     </NoRecordsContent>
@@ -61,16 +72,24 @@
             </MudTabPanel>
             
             <MudTabPanel Text="En Proceso" Icon="@Icons.Material.Filled.Build" BadgeData="@incidentesEnProceso.Count">
-                <MudTable Items="@incidentesEnProceso" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true">
+                <MudTable Items="@incidentesEnProceso" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
+                          Filter="new Func<IncidenteDto, bool>(FilterFunc)" 
+                          SortLabel="Ordenar por">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">Incidentes En Proceso</MudText>
+                        <MudSpacer />
+                        <MudTextField @bind-Value="searchString" Placeholder="Buscar" Adornment="Adornment.Start" 
+                                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    </ToolBarContent>
                     <HeaderContent>
-                        <MudTh>ID</MudTh>
-                        <MudTh>Código</MudTh>
-                        <MudTh>Título</MudTh>
-                        <MudTh>Prioridad</MudTh>
-                        <MudTh>Estudiante</MudTh>
-                        <MudTh>Computadora</MudTh>
-                        <MudTh>Laboratorio</MudTh>
-                        <MudTh>Fecha</MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.IncidenteID)">ID</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.CodigoIncidente)">Código</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Titulo)">Título</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Prioridad)">Prioridad</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.EstudianteNombre)">Estudiante</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.ComputadoraNombre)">Computadora</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.LaboratorioNombre)">Laboratorio</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.FechaReporte)">Fecha</MudTableSortLabel></MudTh>
                         <MudTh>Acciones</MudTh>
                     </HeaderContent>
                     <RowTemplate>
@@ -90,6 +109,9 @@
                             </MudButton>
                         </MudTd>
                     </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager />
+                    </PagerContent>
                     <NoRecordsContent>
                         <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes en proceso.</MudText>
                     </NoRecordsContent>
@@ -97,16 +119,24 @@
             </MudTabPanel>
             
             <MudTabPanel Text="Resueltas" Icon="@Icons.Material.Filled.CheckCircle" BadgeData="@incidentesResueltas.Count">
-                <MudTable Items="@incidentesResueltas" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true">
+                <MudTable Items="@incidentesResueltas" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
+                          Filter="new Func<IncidenteDto, bool>(FilterFunc)" 
+                          SortLabel="Ordenar por">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">Incidentes Resueltos</MudText>
+                        <MudSpacer />
+                        <MudTextField @bind-Value="searchString" Placeholder="Buscar" Adornment="Adornment.Start" 
+                                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    </ToolBarContent>
                     <HeaderContent>
-                        <MudTh>ID</MudTh>
-                        <MudTh>Código</MudTh>
-                        <MudTh>Título</MudTh>
-                        <MudTh>Prioridad</MudTh>
-                        <MudTh>Estudiante</MudTh>
-                        <MudTh>Computadora</MudTh>
-                        <MudTh>Laboratorio</MudTh>
-                        <MudTh>Fecha</MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.IncidenteID)">ID</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.CodigoIncidente)">Código</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Titulo)">Título</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Prioridad)">Prioridad</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.EstudianteNombre)">Estudiante</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.ComputadoraNombre)">Computadora</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.LaboratorioNombre)">Laboratorio</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.FechaReporte)">Fecha</MudTableSortLabel></MudTh>
                         <MudTh>Acciones</MudTh>
                     </HeaderContent>
                     <RowTemplate>
@@ -126,6 +156,9 @@
                             </MudButton>
                         </MudTd>
                     </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager />
+                    </PagerContent>
                     <NoRecordsContent>
                         <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes resueltos.</MudText>
                     </NoRecordsContent>
@@ -139,6 +172,7 @@
     private bool isLoading = true;
     private string? errorMessage;
     private int? userId;
+    private string searchString = "";
     
     private List<IncidenteDto> incidentesPendientes = new();
     private List<IncidenteDto> incidentesEnProceso = new();
@@ -209,5 +243,28 @@
             "Media" => Color.Warning,
             _ => Color.Info
         };
+    }
+
+    private bool FilterFunc(IncidenteDto incidente)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        if (incidente.CodigoIncidente?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        if (incidente.Titulo?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        if (incidente.Descripcion?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        if (incidente.EstudianteNombre?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        if (incidente.ComputadoraNombre?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        if (incidente.LaboratorioNombre?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        if (incidente.Prioridad?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+
+        return false;
     }
 }
