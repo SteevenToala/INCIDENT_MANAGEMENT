@@ -31,10 +31,19 @@
                 <DataAnnotationsValidator />
 
                 <MudStack Spacing="3">
+                        <label for="laboratorio-select">Laboratorio</label>
+                        <select id="laboratorio-select" class="form-control" @bind="laboratorioSeleccionadoId">
+                            <option value="">-- Selecciona un laboratorio --</option>
+                            @foreach (var lab in laboratorios)
+                            {
+                                <option value="@lab.Id">@lab.Nombre</option>
+                            }
+                        </select>
+
                         <label for="computadora-select">Computadora</label>
                         <select id="computadora-select" class="form-control" @bind="formModel.ComputadoraID" required>
                             <option value="">-- Selecciona una computadora --</option>
-                            @foreach (var comp in computadoras)
+                            @foreach (var comp in computadoras.Where(c => laboratorioSeleccionadoId.HasValue ? c.LaboratorioId == laboratorioSeleccionadoId : true))
                             {
                                 <option value="@comp.Id">@comp.Nombre - @comp.Descripcion</option>
                             }
@@ -99,6 +108,8 @@
 
     private NuevaIncidenciaModel formModel = new();
     private List<ComputadoraOption> computadoras = new();
+    private List<LaboratorioOption> laboratorios = new();
+    private int? laboratorioSeleccionadoId;
     // MudSelect no necesita propiedad intermedia
     private bool isLoading = true;
     private bool isSubmitting;
@@ -135,6 +146,13 @@
         try
         {
             computadoras = (await EstudiantePortalService.GetComputadorasAsync()).ToList();
+            // Extraer laboratorios únicos
+            laboratorios = computadoras
+                .GroupBy(c => c.LaboratorioId)
+                .Select(g => new LaboratorioOption { Id = g.Key, Nombre = g.First().LaboratorioNombre })
+                .OrderBy(l => l.Nombre)
+                .ToList();
+
             Console.WriteLine($"[NuevaIncidencia] Computadoras cargadas: {computadoras.Count}");
             foreach (var comp in computadoras)
             {
@@ -157,6 +175,12 @@
             isLoading = false;
         }
     }
+// Clase para laboratorio
+public class LaboratorioOption
+{
+    public int Id { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+}
 
     private async Task HandleValidSubmit(EditContext context)
     {

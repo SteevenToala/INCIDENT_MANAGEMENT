@@ -92,10 +92,14 @@ public class EstudiantePortalService : IEstudiantePortalService
         var computadoras = await _computadoraRepository.GetAllAsync();
 
         return computadoras
-            .Select(c => new ComputadoraOption(
-                c.ComputadoraID,
-                c.CodigoEquipo,
-                c.Laboratorio != null ? $"{c.Laboratorio.Nombre} - {c.Laboratorio.Ubicacion}" : "Sin laboratorio"))
+            .Select(c => new ComputadoraOption
+            {
+                Id = c.ComputadoraID,
+                Nombre = c.CodigoEquipo,
+                Descripcion = c.Laboratorio != null ? $"{c.Laboratorio.Nombre} - {c.Laboratorio.Ubicacion}" : "Sin laboratorio",
+                LaboratorioId = c.Laboratorio?.LaboratorioID ?? 0,
+                LaboratorioNombre = c.Laboratorio?.Nombre ?? "Sin laboratorio"
+            })
             .OrderBy(c => c.Nombre)
             .ToList();
     }
