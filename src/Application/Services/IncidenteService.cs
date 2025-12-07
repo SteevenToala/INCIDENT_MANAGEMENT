@@ -148,7 +148,8 @@ public class IncidenteService : IIncidenteService
             ComputadoraNombre = incidente.Computadora?.CodigoEquipo ?? "",
             LaboratorioNombre = incidente.Laboratorio?.Nombre ?? "",
             UsuarioReportador = incidente.UsuarioReportador?.NombreCompleto ?? "",
-            EstudianteNombre = incidente.UsuarioReportador?.NombreCompleto ?? ""
+            EstudianteNombre = incidente.UsuarioReportador?.NombreCompleto ?? "",
+            RolReportador = incidente.UsuarioReportador?.Rol?.Nombre ?? ""
         };
     }
 
