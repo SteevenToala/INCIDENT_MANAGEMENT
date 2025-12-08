@@ -1,0 +1,260 @@
+@page "/notificaciones"
+@rendermode InteractiveServer
+@using IncidentManagement.Application.DTOs
+@using IncidentManagement.Application.Interfaces
+@inject INotificacionService NotificacionService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>Notificaciones</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">
+        <MudIcon Icon="@Icons.Material.Filled.Notifications" Class="mr-2" />
+        Mis Notificaciones
+    </MudText>
+
+    <MudPaper Class="pa-4 mb-4">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudChipSet @bind-SelectedChip="filtroSeleccionado" Mandatory="false">
+                <MudChip Text="Todas" Value="@("todas")" Default="true" OnClick="@(() => CambiarFiltro("todas"))">
+                    Todas (@notificaciones.Count())
+                </MudChip>
+                <MudChip Text="No leídas" Value="@("no-leidas")" Color="Color.Primary" OnClick="@(() => CambiarFiltro("no-leidas"))">
+                    No leídas (@notificaciones.Count(n => !n.Leida))
+                </MudChip>
+            </MudChipSet>
+
+            @if (notificacionesFiltradas.Any(n => !n.Leida))
+            {
+                <MudButton Variant="Variant.Text" 
+                           Color="Color.Primary" 
+                           OnClick="@(async () => await MarcarTodasComoLeidas())"
+                           StartIcon="@Icons.Material.Filled.DoneAll">
+                    Marcar todas como leídas
+                </MudButton>
+            }
+        </MudStack>
+    </MudPaper>
+
+    @if (cargando)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+    }
+    else if (!notificacionesFiltradas.Any())
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudIcon Icon="@Icons.Material.Filled.NotificationsNone" Size="Size.Large" Color="Color.Default" />
+            <MudText Typo="Typo.h6" Class="mt-4">No tienes notificaciones</MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudStack Spacing="2">
+            @foreach (var notificacion in notificacionesFiltradas)
+            {
+                <MudPaper Class="pa-4" Elevation="notificacion.Leida ? 0 : 2">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Start">
+                        <MudStack Spacing="1" Style="flex: 1;">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="@ObtenerIconoPorTipo(notificacion.Tipo)" 
+                                         Color="@ObtenerColorPorTipo(notificacion.Tipo)" />
+                                <MudText Typo="Typo.subtitle1" Style="@(notificacion.Leida ? "" : "font-weight: bold;")">
+                                    @notificacion.Titulo
+                                </MudText>
+                                @if (!notificacion.Leida)
+                                {
+                                    <MudChip Size="Size.Small" Color="Color.Primary">Nueva</MudChip>
+                                }
+                            </MudStack>
+
+                            @if (!string.IsNullOrEmpty(notificacion.Mensaje))
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Default">
+                                    @notificacion.Mensaje
+                                </MudText>
+                            }
+
+                            <MudText Typo="Typo.caption" Color="Color.Default">
+                                @FormatearFecha(notificacion.FechaCreacion)
+                            </MudText>
+                        </MudStack>
+
+                        <MudStack Row="true" Spacing="1">
+                            @if (!string.IsNullOrEmpty(notificacion.URLAccion))
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" 
+                                               Color="Color.Primary" 
+                                               Size="Size.Small"
+                                               OnClick="@(() => AbrirAccion(notificacion))" 
+                                               Title="Abrir" />
+                            }
+                            @if (!notificacion.Leida)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Check" 
+                                               Color="Color.Success" 
+                                               Size="Size.Small"
+                                               OnClick="@(async () => await MarcarComoLeida(notificacion.NotificacionID))" 
+                                               Title="Marcar como leída" />
+                            }
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            }
+        </MudStack>
+    }
+</MudContainer>
+
+@code {
+    private List<NotificacionDto> notificaciones = new();
+    private bool cargando = true;
+    private MudChip? filtroSeleccionado;
+    private int usuarioId;
+    private string filtroActual = "todas";
+
+    private IEnumerable<NotificacionDto> notificacionesFiltradas => 
+        filtroActual == "no-leidas" 
+            ? notificaciones.Where(n => !n.Leida) 
+            : notificaciones;
+
+    private void CambiarFiltro(string filtro)
+    {
+        filtroActual = filtro;
+        Snackbar.Add($"Filtro cambiado a: {filtro}", Severity.Info);
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarUsuarioId();
+        await CargarNotificaciones();
+    }
+
+    private async Task CargarUsuarioId()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        usuarioId = int.Parse(userIdClaim ?? "0");
+    }
+
+    private async Task CargarNotificaciones()
+    {
+        cargando = true;
+        try
+        {
+            var resultado = await NotificacionService.GetNotificacionesByUsuarioAsync(usuarioId);
+            notificaciones = resultado.ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cargando notificaciones: {ex.Message}");
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task MarcarComoLeida(int notificacionId)
+    {
+        try
+        {
+            Snackbar.Add("Marcando como leída...", Severity.Info);
+            await NotificacionService.MarcarComoLeidaAsync(notificacionId);
+            
+            var notificacion = notificaciones.FirstOrDefault(n => n.NotificacionID == notificacionId);
+            if (notificacion != null)
+            {
+                notificacion.Leida = true;
+                Snackbar.Add("Notificación marcada como leída", Severity.Success);
+            }
+            
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Error marcando como leída: {ex.Message}");
+        }
+    }
+
+    private async Task MarcarTodasComoLeidas()
+    {
+        try
+        {
+            Snackbar.Add("Marcando todas como leídas...", Severity.Info);
+            await NotificacionService.MarcarTodasComoLeidasAsync(usuarioId);
+            
+            foreach (var notificacion in notificaciones)
+            {
+                notificacion.Leida = true;
+            }
+            
+            Snackbar.Add("Todas las notificaciones marcadas como leídas", Severity.Success);
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Error marcando todas como leídas: {ex.Message}");
+        }
+    }
+
+    private void AbrirAccion(NotificacionDto notificacion)
+    {
+        if (!notificacion.Leida)
+        {
+            _ = MarcarComoLeida(notificacion.NotificacionID);
+        }
+        
+        if (!string.IsNullOrEmpty(notificacion.URLAccion))
+        {
+            Navigation.NavigateTo(notificacion.URLAccion);
+        }
+    }
+
+    private string ObtenerIconoPorTipo(string? tipo)
+    {
+        return tipo switch
+        {
+            "asignacion" => Icons.Material.Filled.Assignment,
+            "actualizacion" => Icons.Material.Filled.Update,
+            "incidente" => Icons.Material.Filled.ReportProblem,
+            "reporte" => Icons.Material.Filled.Description,
+            "sistema" => Icons.Material.Filled.Info,
+            _ => Icons.Material.Filled.Notifications
+        };
+    }
+
+    private Color ObtenerColorPorTipo(string? tipo)
+    {
+        return tipo switch
+        {
+            "asignacion" => Color.Primary,
+            "actualizacion" => Color.Info,
+            "incidente" => Color.Warning,
+            "reporte" => Color.Success,
+            "sistema" => Color.Default,
+            _ => Color.Default
+        };
+    }
+
+    private string FormatearFecha(DateTime fecha)
+    {
+        var diferencia = DateTime.Now - fecha;
+
+        if (diferencia.TotalMinutes < 1)
+            return "Hace unos segundos";
+        if (diferencia.TotalMinutes < 60)
+            return $"Hace {(int)diferencia.TotalMinutes} minutos";
+        if (diferencia.TotalHours < 24)
+            return $"Hace {(int)diferencia.TotalHours} horas";
+        if (diferencia.TotalDays < 7)
+            return $"Hace {(int)diferencia.TotalDays} días";
+        
+        return fecha.ToString("dd/MM/yyyy HH:mm");
+    }
+}

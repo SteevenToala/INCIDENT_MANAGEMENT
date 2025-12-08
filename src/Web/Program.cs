@@ -34,6 +34,7 @@ builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IIncidenteRepository, IncidenteRepository>();
 builder.Services.AddScoped<IBaseConocimientoRepository, BaseConocimientoRepository>();
 builder.Services.AddScoped<INotificacionRepository, NotificacionRepository>();
+builder.Services.AddScoped<ISuscripcionPushRepository, SuscripcionPushRepository>();
 builder.Services.AddScoped<IFacultadRepository, FacultadRepository>();
 builder.Services.AddScoped<ILaboratorioRepository, LaboratorioRepository>();
 builder.Services.AddScoped<IComputadoraRepository, ComputadoraRepository>();
@@ -44,6 +45,8 @@ builder.Services.AddScoped<IIncidenteService, IncidenteService>();
 builder.Services.AddScoped<IBaseConocimientoService, BaseConocimientoService>();
 builder.Services.AddScoped<IEstudiantePortalService, EstudiantePortalService>();
 builder.Services.AddScoped<IAsignacionService, AsignacionService>();
+builder.Services.AddScoped<INotificacionService, NotificacionService>();
+builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 
 // Add HttpContextAccessor para acceder a cookies
 builder.Services.AddHttpContextAccessor();

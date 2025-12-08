@@ -102,7 +102,8 @@
                 "administrativo" => new MenuItem("Panel", "/administrativo/home", Icons.Material.Filled.Dashboard, true),
                 "laboratorista" => new MenuItem("Panel", "/laboratorista/home", Icons.Material.Filled.Build, true),
                 _ => new MenuItem("Inicio", "/", Icons.Material.Filled.Home, true)
-            }
+            },
+            new MenuItem("Notificaciones", "/notificaciones", Icons.Material.Filled.Notifications)
         });
 
         foreach (var extraSection in normalizedRole switch
