@@ -90,6 +90,19 @@ public class AsignacionService : IAsignacionService
         await _asignacionRepository.UpdateAsync(asignacion);
     }
 
+    public async Task EliminarAsignacionAsync(int asignacionId)
+    {
+        var asignacion = await _asignacionRepository.GetByIdAsync(asignacionId);
+        if (asignacion == null)
+            throw new Exception("Asignación no encontrada");
+
+        // Verificar que esté en estado Pendiente para poder eliminar
+        if (asignacion.EstadoAsignacion != "Pendiente")
+            throw new Exception("Solo se pueden rechazar asignaciones en estado Pendiente");
+
+        await _asignacionRepository.DeleteAsync(asignacionId);
+    }
+
     public async Task<IEnumerable<AsignacionDto>> GetAsignacionesByIncidenteAsync(int incidenteId)
     {
         var asignaciones = await _asignacionRepository.GetByIncidenteIdAsync(incidenteId);

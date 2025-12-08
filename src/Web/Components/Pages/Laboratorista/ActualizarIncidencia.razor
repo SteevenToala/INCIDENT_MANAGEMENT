@@ -107,7 +107,7 @@
                             Este incidente no está asignado a ti. Solo puedes visualizar la información.
                         </MudAlert>
                     }
-                    else if (asignacionActual == null && esAsignador && incidente.Estado != "Cerrado" && incidente.Estado != "Resuelto")
+                    else if (!tieneAsignacionActiva && esAsignador && incidente.Estado != "Cerrado" && incidente.Estado != "Resuelto")
                     {
                         <!-- Formulario de Asignación -->
                         <MudText Typo="Typo.h6" Class="mb-3">
@@ -170,11 +170,18 @@
                         <MudText Class="mb-3">
                             Para comenzar a trabajar en este incidente, primero debes aceptar la asignación.
                         </MudText>
-                        <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Large"
-                                   OnClick="AceptarAsignacion" Disabled="isSubmitting">
-                            <MudIcon Icon="@Icons.Material.Filled.Check" Class="me-2" />
-                            Aceptar y Comenzar a Trabajar
-                        </MudButton>
+                        <MudStack Direction="Row" Spacing="2">
+                            <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Large"
+                                       OnClick="AceptarAsignacion" Disabled="isSubmitting">
+                                <MudIcon Icon="@Icons.Material.Filled.Check" Class="me-2" />
+                                Aceptar y Comenzar a Trabajar
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Large"
+                                       OnClick="RechazarAsignacion" Disabled="isSubmitting">
+                                <MudIcon Icon="@Icons.Material.Filled.Cancel" Class="me-2" />
+                                Rechazar Asignación
+                            </MudButton>
+                        </MudStack>
                     }
                     else if (asignacionActual != null && asignacionActual.EstadoAsignacion == "Aceptado" && incidente.Estado != "Cerrado")
                     {
@@ -317,9 +324,6 @@
                         </MudTimelineItem>
 
                         <!-- 2. Asignado -->
-                        @{
-                            var primeraAsignacion = todasAsignaciones.OrderBy(a => a.FechaAsignacion).FirstOrDefault();
-                        }
                         <MudTimelineItem Color="@(GetTimelineColor("Asignado"))" 
                                          Size="@(GetTimelineSize("Asignado"))"
                                          Variant="@(GetTimelineVariant("Asignado"))">
@@ -355,16 +359,16 @@
                                          Size="@(GetTimelineSize("Iniciado"))"
                                          Variant="@(GetTimelineVariant("Iniciado"))">
                             <ItemOpposite>
-                                @if (asignacionActual?.FechaAceptacion.HasValue == true)
+                                @if (primeraAsignacion?.FechaAceptacion.HasValue == true)
                                 {
-                                    <MudText Typo="Typo.caption">@asignacionActual.FechaAceptacion.Value.ToString("dd/MM HH:mm")</MudText>
+                                    <MudText Typo="Typo.caption">@primeraAsignacion.FechaAceptacion.Value.ToString("dd/MM HH:mm")</MudText>
                                 }
                             </ItemOpposite>
                             <ItemContent>
                                 <MudText Typo="Typo.body2"><strong>3. Trabajo Iniciado</strong></MudText>
-                                @if (asignacionActual?.FechaAceptacion.HasValue == true)
+                                @if (primeraAsignacion?.FechaAceptacion.HasValue == true)
                                 {
-                                    <MudText Typo="Typo.caption">Por @asignacionActual.NombreTecnico</MudText>
+                                    <MudText Typo="Typo.caption">Por @primeraAsignacion.NombreTecnico</MudText>
                                 }
                                 else
                                 {
@@ -382,16 +386,16 @@
                                          Size="@(GetTimelineSize("Completado"))"
                                          Variant="@(GetTimelineVariant("Completado"))">
                             <ItemOpposite>
-                                @if (asignacionActual?.FechaCompletacion.HasValue == true)
+                                @if (primeraAsignacion?.FechaCompletacion.HasValue == true)
                                 {
-                                    <MudText Typo="Typo.caption">@asignacionActual.FechaCompletacion.Value.ToString("dd/MM HH:mm")</MudText>
+                                    <MudText Typo="Typo.caption">@primeraAsignacion.FechaCompletacion.Value.ToString("dd/MM HH:mm")</MudText>
                                 }
                             </ItemOpposite>
                             <ItemContent>
                                 <MudText Typo="Typo.body2"><strong>4. Trabajo Completado</strong></MudText>
-                                @if (asignacionActual?.FechaCompletacion.HasValue == true)
+                                @if (primeraAsignacion?.FechaCompletacion.HasValue == true)
                                 {
-                                    <MudText Typo="Typo.caption">Por @asignacionActual.NombreTecnico</MudText>
+                                    <MudText Typo="Typo.caption">Por @primeraAsignacion.NombreTecnico</MudText>
                                 }
                                 else
                                 {
@@ -463,6 +467,7 @@
     private AsignacionDto? asignacionActual;
     private AsignacionDto? primeraAsignacion;
     private List<AsignacionDto> todasAsignaciones = new();
+    private bool tieneAsignacionActiva = false;
     private ResolverIncidenteModel formModel = new();
     private AsignacionFormModel asignacionForm = new();
     private List<Usuario> tecnicos = new();
@@ -534,6 +539,13 @@
             
             // Obtener la primera asignación para el timeline
             primeraAsignacion = todasAsignaciones.OrderBy(a => a.FechaAsignacion).FirstOrDefault();
+            
+            // Verificar si existe alguna asignación activa (no completada en todos los estados)
+            tieneAsignacionActiva = todasAsignaciones.Any(a => 
+                a.EstadoAsignacion == "Pendiente" || 
+                a.EstadoAsignacion == "Aceptado" || 
+                a.EstadoAsignacion == "Completado"
+            );
         }
         catch (Exception ex)
         {
@@ -606,6 +618,28 @@
         catch (Exception ex)
         {
             Snackbar.Add($"Error al aceptar asignación: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task RechazarAsignacion()
+    {
+        if (asignacionActual == null) return;
+
+        isSubmitting = true;
+        try
+        {
+            // Eliminar la asignación para permitir reasignar
+            await AsignacionService.EliminarAsignacionAsync(asignacionActual.AsignacionID);
+            Snackbar.Add("Asignación rechazada. El incidente puede ser reasignado.", Severity.Warning);
+            await CargarIncidencia();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al rechazar asignación: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -755,19 +789,19 @@
         if (incidente.Estado == "Resuelto")
             return "Resuelto";
         
-        // Estados basados en asignación (si existe)
-        if (asignacionActual != null)
+        // Estados basados en asignación (usar primeraAsignacion para que todos vean el mismo estado)
+        if (primeraAsignacion != null)
         {
             // 4. Trabajo Completado - El laboratorista marcó como completado
-            if (asignacionActual.EstadoAsignacion == "Completado")
+            if (primeraAsignacion.EstadoAsignacion == "Completado")
                 return "Completado";
             
             // 3. Trabajo Iniciado - El laboratorista aceptó y está trabajando
-            if (asignacionActual.EstadoAsignacion == "Aceptado")
+            if (primeraAsignacion.EstadoAsignacion == "Aceptado")
                 return "Iniciado";
             
             // 2. Asignado - Tiene asignación pero pendiente de aceptar
-            if (asignacionActual.EstadoAsignacion == "Pendiente")
+            if (primeraAsignacion.EstadoAsignacion == "Pendiente")
                 return "Asignado";
         }
         
