@@ -8,16 +8,16 @@ public class AsignacionService : IAsignacionService
 {
     private readonly IAsignacionRepository _asignacionRepository;
     private readonly IIncidenteRepository _incidenteRepository;
-    private readonly INotificacionRepository _notificacionRepository;
+    private readonly INotificacionService _notificacionService;
 
     public AsignacionService(
         IAsignacionRepository asignacionRepository,
         IIncidenteRepository incidenteRepository,
-        INotificacionRepository notificacionRepository)
+        INotificacionService notificacionService)
     {
         _asignacionRepository = asignacionRepository;
         _incidenteRepository = incidenteRepository;
-        _notificacionRepository = notificacionRepository;
+        _notificacionService = notificacionService;
     }
 
     public async Task<AsignacionDto> AsignarIncidenteAsync(CreateAsignacionDto dto)
@@ -44,19 +44,15 @@ public class AsignacionService : IAsignacionService
             await _incidenteRepository.UpdateAsync(incidente);
         }
 
-        // Crear notificación para el técnico asignado
-        var notificacion = new Notificacion
-        {
-            UsuarioID = dto.UsuarioAsignadoID,
-            IncidenteID = dto.IncidenteID,
-            Titulo = "Nueva tarea asignada",
-            Mensaje = $"Se te ha asignado el incidente {incidente?.CodigoIncidente}",
-            Tipo = "Asignacion",
-            Leida = false,
-            URLAccion = $"/laboratorista/asignaciones/actualizar?id={dto.IncidenteID}",
-            FechaCreacion = DateTime.Now
-        };
-        await _notificacionRepository.CreateAsync(notificacion);
+        // Crear notificación para el técnico asignado (esto también enviará push notification)
+        await _notificacionService.CrearNotificacionAsync(
+            dto.UsuarioAsignadoID,
+            dto.IncidenteID,
+            "Nueva tarea asignada",
+            $"Se te ha asignado el incidente {incidente?.CodigoIncidente}",
+            "asignacion",
+            $"/laboratorista/asignaciones/actualizar?id={dto.IncidenteID}"
+        );
 
         return MapToDto(asignacionCreada);
     }

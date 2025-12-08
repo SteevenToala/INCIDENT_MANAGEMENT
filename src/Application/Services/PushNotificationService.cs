@@ -29,10 +29,20 @@ public class PushNotificationService : IPushNotificationService
 
     public async Task<bool> SendNotificationAsync(int usuarioId, string titulo, string mensaje, string? urlAccion = null)
     {
+        Console.WriteLine($"[PushService] === Enviando notificación push ===");
+        Console.WriteLine($"[PushService] UsuarioID: {usuarioId}");
+        Console.WriteLine($"[PushService] Título: {titulo}");
+        Console.WriteLine($"[PushService] Mensaje: {mensaje}");
+        
         var suscripciones = await _suscripcionRepository.GetActivasByUsuarioAsync(usuarioId);
         
+        Console.WriteLine($"[PushService] Suscripciones activas encontradas: {suscripciones.Count()}");
+        
         if (!suscripciones.Any())
+        {
+            Console.WriteLine($"[PushService] No hay suscripciones activas para usuario {usuarioId}");
             return false;
+        }
 
         var payload = new PushNotificationPayloadDto
         {
@@ -44,12 +54,16 @@ public class PushNotificationService : IPushNotificationService
         };
 
         var jsonPayload = JsonSerializer.Serialize(payload);
+        Console.WriteLine($"[PushService] Payload: {jsonPayload}");
+        
         var success = true;
 
         foreach (var suscripcion in suscripciones)
         {
             try
             {
+                Console.WriteLine($"[PushService] Enviando a endpoint: {suscripcion.Endpoint.Substring(0, Math.Min(50, suscripcion.Endpoint.Length))}...");
+                
                 var pushSubscription = new PushSubscription(
                     suscripcion.Endpoint,
                     suscripcion.P256DH,
@@ -59,23 +73,30 @@ public class PushNotificationService : IPushNotificationService
                 var vapidDetails = new VapidDetails(_vapidSubject, _vapidPublicKey, _vapidPrivateKey);
 
                 await _webPushClient.SendNotificationAsync(pushSubscription, jsonPayload, vapidDetails);
+                
+                Console.WriteLine($"[PushService] ✓ Notificación enviada exitosamente a suscripción {suscripcion.SuscripcionID}");
             }
             catch (WebPushException ex)
             {
+                Console.WriteLine($"[PushService] ✗ WebPushException: {ex.Message}, StatusCode: {ex.StatusCode}");
+                
                 // Si la suscripción ya no es válida (410 Gone), desactivarla
                 if (ex.StatusCode == System.Net.HttpStatusCode.Gone)
                 {
+                    Console.WriteLine($"[PushService] Desactivando suscripción {suscripcion.SuscripcionID} (410 Gone)");
                     suscripcion.Activa = false;
                     await _suscripcionRepository.UpdateAsync(suscripcion);
                 }
                 success = false;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"[PushService] ✗ Exception: {ex.Message}");
                 success = false;
             }
         }
 
+        Console.WriteLine($"[PushService] Resultado final: {(success ? "ÉXITO" : "FALLÓ")}");
         return success;
     }
 
