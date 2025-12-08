@@ -23,8 +23,6 @@
             <MudChip Color="Color.Primary" Variant="Variant.Filled" Class="w-fit-content text-uppercase">@userRole</MudChip>
         </MudStack>
 
-        <MudDivider Class="mb-3" />
-
         <div class="flex-grow-1 overflow-auto pe-1">
             @foreach (var section in menuSections)
             {
@@ -39,8 +37,6 @@
                 </MudNavMenu>
             }
         </div>
-
-        <MudDivider Class="my-3" />
 
         <form method="post" action="/auth/logout" class="w-100">
             <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Logout" ButtonType="ButtonType.Submit" FullWidth="true">
