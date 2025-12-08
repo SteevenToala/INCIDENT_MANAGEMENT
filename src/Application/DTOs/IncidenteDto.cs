@@ -17,6 +17,7 @@ public class IncidenteDto
     public string UsuarioReportador { get; set; } = string.Empty;
     public string EstudianteNombre { get; set; } = string.Empty;
     public string RolReportador { get; set; } = string.Empty;
+    public string? EstadoAsignacion { get; set; }
 }
 
 public class CreateIncidenteDto

@@ -4,15 +4,24 @@
 @using MudBlazor
 @using IncidentManagement.Application.Interfaces
 @using IncidentManagement.Application.DTOs
+@using IncidentManagement.Domain.Entities
 @inject IIncidenteService IncidenteService
+@inject IAsignacionService AsignacionService
+@inject IBaseConocimientoService BaseConocimientoService
+@inject IUsuarioRepository UsuarioRepository
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<PageTitle>Actualizar Incidente</PageTitle>
+<PageTitle>Detalle del Incidente</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-4">Actualizar Estado de Incidente</MudText>
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" 
+               Color="Color.Default" OnClick="Volver" Class="mb-3">
+        Volver a Mis Tareas
+    </MudButton>
+    
+    <MudText Typo="Typo.h4" Class="mb-4">Detalle del Incidente</MudText>
 
     @if (isLoading)
     {
@@ -24,76 +33,425 @@
     }
     else if (incidente != null)
     {
-        <MudPaper Elevation="2" Class="pa-4 mb-4">
-            <MudStack Spacing="2">
-                <MudText Typo="Typo.h6">Detalles del Incidente</MudText>
-                <MudDivider />
-                
-                <MudStack Row="true" Spacing="2">
-                    <MudText><strong>ID:</strong> @incidente.IncidenteID</MudText>
-                    <MudChip Color="@GetPrioridadColor(incidente.Prioridad)" Size="Size.Small">@incidente.Prioridad</MudChip>
-                </MudStack>
-                
-                <MudText><strong>Título:</strong> @incidente.Titulo</MudText>
-                <MudText><strong>Descripción:</strong> @incidente.Descripcion</MudText>
-                <MudText><strong>Estudiante:</strong> @incidente.EstudianteNombre</MudText>
-                <MudText><strong>Computadora:</strong> @incidente.ComputadoraNombre</MudText>
-                <MudText><strong>Fecha de Reporte:</strong> @incidente.FechaReporte.ToString("dd/MM/yyyy HH:mm")</MudText>
-                <MudText><strong>Estado Actual:</strong> @incidente.Estado</MudText>
-            </MudStack>
-        </MudPaper>
-
-        <MudPaper Elevation="2" Class="pa-4">
-            <EditForm Model="@formModel" OnValidSubmit="ActualizarEstado">
-                <DataAnnotationsValidator />
-                
-                <MudStack Spacing="3">
-                    <MudText Typo="Typo.h6">Actualizar Estado</MudText>
-                    
-                    <div>
-                        <label for="estado-select">Nuevo Estado</label>
-                        <select id="estado-select" class="form-control" @bind="formModel.Estado" required>
-                            <option value="">-- Seleccionar --</option>
-                            <option value="Pendiente">Pendiente</option>
-                            <option value="En Proceso">En Proceso</option>
-                            <option value="Resuelto">Resuelto</option>
-                            <option value="Cerrado">Cerrado</option>
-                        </select>
-                    </div>
-
-                    <MudTextField @bind-Value="formModel.Comentarios"
-                                  Label="Comentarios / Notas"
-                                  Variant="Variant.Outlined"
-                                  Lines="4"
-                                  Placeholder="Describe las acciones realizadas o cualquier nota relevante..." />
-
-                    <MudStack Direction="Row" Spacing="2">
-                        <MudButton ButtonType="ButtonType.Submit" 
-                                   Variant="Variant.Filled" 
-                                   Color="Color.Success" 
-                                   Disabled="isSubmitting">
-                            @if (isSubmitting)
-                            {
-                                <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
-                                <span>Actualizando...</span>
-                            }
-                            else
-                            {
-                                <MudIcon Icon="@Icons.Material.Filled.Save" Class="me-2" />
-                                <span>Guardar Cambios</span>
-                            }
-                        </MudButton>
+        <MudGrid>
+            <!-- Columna Izquierda: Información del Incidente -->
+            <MudItem xs="12" md="8">
+                <MudPaper Elevation="2" Class="pa-4 mb-4">
+                    <MudStack Spacing="3">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <MudText Typo="Typo.h5">@incidente.CodigoIncidente</MudText>
+                            <MudChip Color="@GetEstadoColor(incidente.Estado)" Size="Size.Medium">
+                                @incidente.Estado
+                            </MudChip>
+                        </div>
                         
-                        <MudButton Variant="Variant.Text" 
-                                   Color="Color.Default" 
-                                   OnClick="Volver"
-                                   Disabled="isSubmitting">
-                            Volver
-                        </MudButton>
+                        <MudDivider />
+                        
+                        <MudText Typo="Typo.h6">@incidente.Titulo</MudText>
+                        
+                        <MudStack Row="true" Spacing="2" Class="flex-wrap">
+                            <MudChip Icon="@Icons.Material.Filled.Flag" Color="@GetPrioridadColor(incidente.Prioridad)" Size="Size.Small">
+                                Prioridad: @incidente.Prioridad
+                            </MudChip>
+                            <MudChip Icon="@Icons.Material.Filled.Computer" Size="Size.Small">
+                                @incidente.ComputadoraNombre
+                            </MudChip>
+                            <MudChip Icon="@Icons.Material.Filled.Room" Size="Size.Small">
+                                @incidente.LaboratorioNombre
+                            </MudChip>
+                        </MudStack>
+                        
+                        <MudText><strong>Descripción:</strong></MudText>
+                        <MudText Class="pa-3" Style="background-color: #f5f5f5; border-radius: 4px;">
+                            @incidente.Descripcion
+                        </MudText>
+                        
+                        <MudStack Row="true" Spacing="4">
+                            <MudText><strong>Reportado por:</strong> @incidente.UsuarioReportador</MudText>
+                            <MudText><strong>Fecha:</strong> @incidente.FechaReporte.ToString("dd/MM/yyyy HH:mm")</MudText>
+                        </MudStack>
+
+                        @if (asignacionActual != null)
+                        {
+                            <MudDivider />
+                            <MudText Typo="Typo.subtitle1"><strong>Asignación Actual</strong></MudText>
+                            <MudStack Row="true" Spacing="3" Class="flex-wrap">
+                                <MudChip Icon="@Icons.Material.Filled.AssignmentInd" 
+                                         Color="@GetEstadoAsignacionColor(asignacionActual.EstadoAsignacion)" 
+                                         Size="Size.Small">
+                                    @asignacionActual.EstadoAsignacion
+                                </MudChip>
+                                <MudText><strong>Asignado a:</strong> @asignacionActual.NombreTecnico</MudText>
+                                @if (asignacionActual.FechaAsignacion.HasValue)
+                                {
+                                    <MudText><strong>Desde:</strong> @asignacionActual.FechaAsignacion.Value.ToString("dd/MM/yyyy HH:mm")</MudText>
+                                }
+                            </MudStack>
+                            
+                            @if (!string.IsNullOrEmpty(asignacionActual.Notas))
+                            {
+                                <MudText><strong>Notas de asignación:</strong></MudText>
+                                <MudText Class="pa-2" Style="background-color: #f5f5f5; border-radius: 4px; font-size: 0.9em;">
+                                    @asignacionActual.Notas
+                                </MudText>
+                            }
+                        }
                     </MudStack>
-                </MudStack>
-            </EditForm>
-        </MudPaper>
+                </MudPaper>
+
+                <!-- Panel de Acciones según el Estado -->
+                <MudPaper Elevation="2" Class="pa-4">
+                    @if (asignacionActual == null && !esAsignador)
+                    {
+                        <MudAlert Severity="Severity.Info">
+                            Este incidente no está asignado a ti. Solo puedes visualizar la información.
+                        </MudAlert>
+                    }
+                    else if (asignacionActual == null && esAsignador && incidente.Estado != "Cerrado" && incidente.Estado != "Resuelto")
+                    {
+                        <!-- Formulario de Asignación -->
+                        <MudText Typo="Typo.h6" Class="mb-3">
+                            <MudIcon Icon="@Icons.Material.Filled.AssignmentInd" Class="me-2" />
+                            Asignar Incidente
+                        </MudText>
+                        <MudText Class="mb-3">
+                            Este incidente aún no ha sido asignado. Selecciona un laboratorista para asignarlo.
+                        </MudText>
+
+                        <MudStack Spacing="3">
+                            <div>
+                                <label for="tecnico-select"><strong>Laboratorista Asignado</strong></label>
+                                <select id="tecnico-select" class="form-control" @bind="asignacionForm.TecnicoSeleccionadoId" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">
+                                    <option value="">-- Seleccionar Laboratorista --</option>
+                                    @foreach (var tecnico in tecnicos)
+                                    {
+                                        <option value="@tecnico.UsuarioID">@tecnico.NombreCompleto</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="tipo-asignacion-select"><strong>Tipo de Asignación</strong></label>
+                                <select id="tipo-asignacion-select" class="form-control" @bind="asignacionForm.TipoAsignacion" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">
+                                    <option value="">-- Seleccionar --</option>
+                                    <option value="Urgente">Urgente</option>
+                                    <option value="Normal">Normal</option>
+                                    <option value="Programada">Programada</option>
+                                </select>
+                            </div>
+
+                            <MudTextField @bind-Value="asignacionForm.Notas"
+                                          Label="Notas de Asignación (Opcional)"
+                                          Variant="Variant.Outlined"
+                                          Lines="3"
+                                          Placeholder="Instrucciones o comentarios para el laboratorista..." />
+
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                                       OnClick="AsignarIncidente" Disabled="isSubmitting || string.IsNullOrEmpty(asignacionForm.TecnicoSeleccionadoId)">
+                                @if (isSubmitting)
+                                {
+                                    <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                                    <span>Asignando...</span>
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.AssignmentInd" Class="me-2" />
+                                    <span>Asignar Incidente</span>
+                                }
+                            </MudButton>
+                        </MudStack>
+                    }
+                    else if (asignacionActual != null && asignacionActual.EstadoAsignacion == "Pendiente" && incidente.Estado != "Cerrado")
+                    {
+                        <MudText Typo="Typo.h6" Class="mb-3">
+                            <MudIcon Icon="@Icons.Material.Filled.AssignmentTurnedIn" Class="me-2" />
+                            Aceptar Asignación
+                        </MudText>
+                        <MudText Class="mb-3">
+                            Para comenzar a trabajar en este incidente, primero debes aceptar la asignación.
+                        </MudText>
+                        <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Large"
+                                   OnClick="AceptarAsignacion" Disabled="isSubmitting">
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Class="me-2" />
+                            Aceptar y Comenzar a Trabajar
+                        </MudButton>
+                    }
+                    else if (asignacionActual != null && asignacionActual.EstadoAsignacion == "Aceptado" && incidente.Estado != "Cerrado")
+                    {
+                        <!-- Paso 3: Trabajando - Botón para completar trabajo -->
+                        <MudText Typo="Typo.h6" Class="mb-3">
+                            <MudIcon Icon="@Icons.Material.Filled.Engineering" Class="me-2" />
+                            Trabajando en el Incidente
+                        </MudText>
+                        <MudText Class="mb-3">
+                            Cuando hayas terminado de trabajar en el incidente, marca el trabajo como completado.
+                        </MudText>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                                   OnClick="CompletarTrabajo" Disabled="isSubmitting">
+                            <MudIcon Icon="@Icons.Material.Filled.Assignment" Class="me-2" />
+                            Completar Trabajo
+                        </MudButton>
+                    }
+                    else if (asignacionActual != null && asignacionActual.EstadoAsignacion == "Completado" && incidente.Estado != "Resuelto" && incidente.Estado != "Cerrado")
+                    {
+                        <!-- Paso 4: Trabajo Completado - Registrar solución -->
+                        <MudText Typo="Typo.h6" Class="mb-3">
+                            <MudIcon Icon="@Icons.Material.Filled.Construction" Class="me-2" />
+                            Registrar Solución
+                        </MudText>
+                        <MudText Class="mb-3">
+                            Describe la solución aplicada. Esta información se guardará en la base de conocimientos.
+                        </MudText>
+                        
+                        <EditForm Model="@formModel" OnValidSubmit="ResolverIncidente">
+                            <MudStack Spacing="3">
+                                <MudTextField @bind-Value="formModel.TituloSolucion"
+                                              Label="Título de la Solución"
+                                              Variant="Variant.Outlined"
+                                              Required="true"
+                                              Placeholder="Ej: Reinstalación de drivers de red" />
+
+                                <MudTextField @bind-Value="formModel.DescripcionSolucion"
+                                              Label="Descripción Detallada de la Solución"
+                                              Variant="Variant.Outlined"
+                                              Lines="6"
+                                              Required="true"
+                                              Placeholder="Describe paso a paso cómo se resolvió el problema..." />
+
+                                <div>
+                                    <label for="categoria-select"><strong>Categoría</strong></label>
+                                    <select id="categoria-select" class="form-control" @bind="formModel.Categoria" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">
+                                        <option value="">-- Seleccionar --</option>
+                                        <option value="Hardware">Hardware</option>
+                                        <option value="Software">Software</option>
+                                        <option value="Red">Red</option>
+                                        <option value="Sistema Operativo">Sistema Operativo</option>
+                                        <option value="Periféricos">Periféricos</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
+                                </div>
+
+                                <MudTextField @bind-Value="formModel.PalabrasClaveStr"
+                                              Label="Palabras Clave (separadas por comas)"
+                                              Variant="Variant.Outlined"
+                                              Placeholder="red, drivers, windows, configuración" />
+
+                                <MudStack Direction="Row" Spacing="2">
+                                    <MudButton ButtonType="ButtonType.Submit" 
+                                               Variant="Variant.Filled" 
+                                               Color="Color.Success" 
+                                               Size="Size.Large"
+                                               Disabled="isSubmitting">
+                                        @if (isSubmitting)
+                                        {
+                                            <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                                            <span>Resolviendo...</span>
+                                        }
+                                        else
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="me-2" />
+                                            <span>Marcar como Resuelto</span>
+                                        }
+                                    </MudButton>
+                                </MudStack>
+                            </MudStack>
+                        </EditForm>
+                    }
+                    else if (incidente.Estado == "Resuelto")
+                    {
+                        <MudAlert Severity="Severity.Success">
+                            <strong>Incidente Resuelto</strong>
+                            @if (asignacionActual?.FechaCompletacion.HasValue == true)
+                            {
+                                <div>Fecha de resolución: @asignacionActual.FechaCompletacion.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                            }
+                        </MudAlert>
+                        
+                        @if (userId == incidente.TecnicoID || esAsignador)
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+                                       Class="mt-3" OnClick="CerrarIncidente" Disabled="isSubmitting" Size="Size.Large">
+                                <MudIcon Icon="@Icons.Material.Filled.Lock" Class="me-2" />
+                                Cerrar Incidente
+                            </MudButton>
+                        }
+                    }
+                    else if (incidente.Estado == "Cerrado")
+                    {
+                        <MudAlert Severity="Severity.Info">
+                            <strong>Incidente Cerrado</strong>
+                            <div>Este incidente está cerrado. No se pueden realizar más acciones.</div>
+                        </MudAlert>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            <!-- Columna Derecha: Línea de Tiempo -->
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="2" Class="pa-4" Style="position: sticky; top: 20px;">
+                    <MudText Typo="Typo.h6" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Timeline" Class="me-2" />
+                        Línea de Tiempo
+                    </MudText>
+                    <MudDivider Class="mb-3" />
+                    
+                    <MudTimeline TimelineOrientation="TimelineOrientation.Vertical" TimelinePosition="TimelinePosition.Start">
+                        <!-- 1. Incidente Reportado -->
+                        <MudTimelineItem Color="@(GetTimelineColor("Reportado"))" 
+                                         Size="@(GetTimelineSize("Reportado"))"
+                                         Variant="@(GetTimelineVariant("Reportado"))">
+                            <ItemOpposite>
+                                @if (incidente.FechaCreacion != default)
+                                {
+                                    <MudText Typo="Typo.caption">@incidente.FechaCreacion.ToString("dd/MM HH:mm")</MudText>
+                                }
+                            </ItemOpposite>
+                            <ItemContent>
+                                <MudText Typo="Typo.body2"><strong>1. Incidente Reportado</strong></MudText>
+                                <MudText Typo="Typo.caption">Por @incidente.UsuarioReportador</MudText>
+                                @if (GetEstadoActual() == "Reportado")
+                                {
+                                    <MudChip Size="Size.Small" Color="Color.Info" Class="mt-1">Actual</MudChip>
+                                }
+                            </ItemContent>
+                        </MudTimelineItem>
+
+                        <!-- 2. Asignado -->
+                        @{
+                            var primeraAsignacion = todasAsignaciones.OrderBy(a => a.FechaAsignacion).FirstOrDefault();
+                        }
+                        <MudTimelineItem Color="@(GetTimelineColor("Asignado"))" 
+                                         Size="@(GetTimelineSize("Asignado"))"
+                                         Variant="@(GetTimelineVariant("Asignado"))">
+                            <ItemOpposite>
+                                @if (primeraAsignacion?.FechaAsignacion.HasValue == true)
+                                {
+                                    <MudText Typo="Typo.caption">@primeraAsignacion.FechaAsignacion.Value.ToString("dd/MM HH:mm")</MudText>
+                                }
+                            </ItemOpposite>
+                            <ItemContent>
+                                <MudText Typo="Typo.body2"><strong>2. Asignado a Laboratorista</strong></MudText>
+                                @if (primeraAsignacion != null)
+                                {
+                                    <MudText Typo="Typo.caption">A @primeraAsignacion.NombreTecnico</MudText>
+                                    @if (!string.IsNullOrEmpty(primeraAsignacion.TipoAsignacion))
+                                    {
+                                        <MudChip Size="Size.Small" Variant="Variant.Text">@primeraAsignacion.TipoAsignacion</MudChip>
+                                    }
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Pendiente de asignación</MudText>
+                                }
+                                @if (GetEstadoActual() == "Asignado")
+                                {
+                                    <MudChip Size="Size.Small" Color="Color.Warning" Class="mt-1">Actual</MudChip>
+                                }
+                            </ItemContent>
+                        </MudTimelineItem>
+
+                        <!-- 3. Trabajo Iniciado (Aceptado) -->
+                        <MudTimelineItem Color="@(GetTimelineColor("Iniciado"))" 
+                                         Size="@(GetTimelineSize("Iniciado"))"
+                                         Variant="@(GetTimelineVariant("Iniciado"))">
+                            <ItemOpposite>
+                                @if (asignacionActual?.FechaAceptacion.HasValue == true)
+                                {
+                                    <MudText Typo="Typo.caption">@asignacionActual.FechaAceptacion.Value.ToString("dd/MM HH:mm")</MudText>
+                                }
+                            </ItemOpposite>
+                            <ItemContent>
+                                <MudText Typo="Typo.body2"><strong>3. Trabajo Iniciado</strong></MudText>
+                                @if (asignacionActual?.FechaAceptacion.HasValue == true)
+                                {
+                                    <MudText Typo="Typo.caption">Por @asignacionActual.NombreTecnico</MudText>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Esperando aceptación del laboratorista</MudText>
+                                }
+                                @if (GetEstadoActual() == "Iniciado")
+                                {
+                                    <MudChip Size="Size.Small" Color="Color.Primary" Class="mt-1">Actual</MudChip>
+                                }
+                            </ItemContent>
+                        </MudTimelineItem>
+
+                        <!-- 4. Trabajo Completado -->
+                        <MudTimelineItem Color="@(GetTimelineColor("Completado"))" 
+                                         Size="@(GetTimelineSize("Completado"))"
+                                         Variant="@(GetTimelineVariant("Completado"))">
+                            <ItemOpposite>
+                                @if (asignacionActual?.FechaCompletacion.HasValue == true)
+                                {
+                                    <MudText Typo="Typo.caption">@asignacionActual.FechaCompletacion.Value.ToString("dd/MM HH:mm")</MudText>
+                                }
+                            </ItemOpposite>
+                            <ItemContent>
+                                <MudText Typo="Typo.body2"><strong>4. Trabajo Completado</strong></MudText>
+                                @if (asignacionActual?.FechaCompletacion.HasValue == true)
+                                {
+                                    <MudText Typo="Typo.caption">Por @asignacionActual.NombreTecnico</MudText>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Pendiente de resolución</MudText>
+                                }
+                                @if (GetEstadoActual() == "Completado")
+                                {
+                                    <MudChip Size="Size.Small" Color="Color.Success" Class="mt-1">Actual</MudChip>
+                                }
+                            </ItemContent>
+                        </MudTimelineItem>
+
+                        <!-- 5. Incidente Resuelto -->
+                        <MudTimelineItem Color="@(GetTimelineColor("Resuelto"))" 
+                                         Size="@(GetTimelineSize("Resuelto"))"
+                                         Variant="@(GetTimelineVariant("Resuelto"))">
+                            <ItemOpposite>
+                                @if (incidente.FechaResolucion.HasValue)
+                                {
+                                    <MudText Typo="Typo.caption">@incidente.FechaResolucion.Value.ToString("dd/MM HH:mm")</MudText>
+                                }
+                            </ItemOpposite>
+                            <ItemContent>
+                                <MudText Typo="Typo.body2"><strong>5. Incidente Resuelto</strong></MudText>
+                                @if (incidente.FechaResolucion.HasValue)
+                                {
+                                    <MudText Typo="Typo.caption">Guardado en Base de Conocimientos</MudText>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Pendiente de cierre</MudText>
+                                }
+                                @if (GetEstadoActual() == "Resuelto")
+                                {
+                                    <MudChip Size="Size.Small" Color="Color.Success" Class="mt-1">Actual</MudChip>
+                                }
+                            </ItemContent>
+                        </MudTimelineItem>
+
+                        <!-- 6. Incidente Cerrado -->
+                        <MudTimelineItem Color="@(GetTimelineColor("Cerrado"))" 
+                                         Size="@(GetTimelineSize("Cerrado"))"
+                                         Variant="@(GetTimelineVariant("Cerrado"))">
+                            <ItemContent>
+                                <MudText Typo="Typo.body2"><strong>6. Incidente Cerrado</strong></MudText>
+                                @if (incidente.Estado == "Cerrado")
+                                {
+                                    <MudText Typo="Typo.caption">Proceso finalizado</MudText>
+                                    <MudChip Size="Size.Small" Color="Color.Dark" Class="mt-1">Actual</MudChip>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Estado final</MudText>
+                                }
+                            </ItemContent>
+                        </MudTimelineItem>
+                    </MudTimeline>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
     }
 </MudContainer>
 
@@ -102,11 +460,17 @@
     public int? IncidenteId { get; set; }
 
     private IncidenteDto? incidente;
-    private ActualizarEstadoModel formModel = new();
+    private AsignacionDto? asignacionActual;
+    private AsignacionDto? primeraAsignacion;
+    private List<AsignacionDto> todasAsignaciones = new();
+    private ResolverIncidenteModel formModel = new();
+    private AsignacionFormModel asignacionForm = new();
+    private List<Usuario> tecnicos = new();
     private bool isLoading = true;
     private bool isSubmitting;
     private string? errorMessage;
     private int? userId;
+    private bool esAsignador = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -120,6 +484,10 @@
         }
 
         userId = user.GetUserId();
+        
+        // Verificar si el usuario tiene permiso de asignador
+        var roles = user.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role).Select(c => c.Value);
+        esAsignador = roles.Contains("Laboratorista"); // Todos los laboratoristas pueden asignar
 
         if (!IncidenteId.HasValue)
         {
@@ -129,6 +497,12 @@
         }
 
         await CargarIncidencia();
+        
+        // Cargar técnicos si es asignador
+        if (esAsignador)
+        {
+            await CargarTecnicos();
+        }
     }
 
     private async Task CargarIncidencia()
@@ -146,10 +520,20 @@
                 return;
             }
 
-            // Los laboratoristas pueden actualizar cualquier incidente
-            // En el futuro se puede agregar validación de asignación si es necesario
+            // Cargar todas las asignaciones para la línea de tiempo
+            todasAsignaciones = (await AsignacionService.GetAsignacionesByIncidenteAsync(incidente.IncidenteID)).ToList();
             
-            formModel.Estado = incidente.Estado;
+            // Cargar asignación actual del usuario (la más reciente)
+            if (userId.HasValue)
+            {
+                asignacionActual = todasAsignaciones
+                    .Where(a => a.UsuarioAsignadoID == userId.Value)
+                    .OrderByDescending(a => a.FechaAsignacion)
+                    .FirstOrDefault();
+            }
+            
+            // Obtener la primera asignación para el timeline
+            primeraAsignacion = todasAsignaciones.OrderBy(a => a.FechaAsignacion).FirstOrDefault();
         }
         catch (Exception ex)
         {
@@ -162,7 +546,144 @@
         }
     }
 
-    private async Task ActualizarEstado()
+    private async Task CargarTecnicos()
+    {
+        try
+        {
+            var usuariosLab = await UsuarioRepository.GetByRolAsync("Laboratorista");
+            tecnicos = usuariosLab.ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ActualizarIncidencia] Error al cargar técnicos: {ex.Message}");
+        }
+    }
+
+    private async Task AsignarIncidente()
+    {
+        if (incidente == null || userId == null || string.IsNullOrEmpty(asignacionForm.TecnicoSeleccionadoId)) return;
+
+        isSubmitting = true;
+        try
+        {
+            var createDto = new CreateAsignacionDto
+            {
+                IncidenteID = incidente.IncidenteID,
+                UsuarioAsignadoID = int.Parse(asignacionForm.TecnicoSeleccionadoId),
+                TipoAsignacion = asignacionForm.TipoAsignacion ?? "Normal",
+                Notas = asignacionForm.Notas
+            };
+
+            await AsignacionService.AsignarIncidenteAsync(createDto);
+            Snackbar.Add("Incidente asignado exitosamente", Severity.Success);
+            await CargarIncidencia();
+            
+            // Limpiar formulario
+            asignacionForm = new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al asignar incidente: {ex.Message}", Severity.Error);
+            Console.WriteLine($"[ActualizarIncidencia] Error: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task AceptarAsignacion()
+    {
+        if (asignacionActual == null || userId == null) return;
+
+        isSubmitting = true;
+        try
+        {
+            await AsignacionService.AceptarAsignacionAsync(asignacionActual.AsignacionID, userId.Value);
+            Snackbar.Add("Asignación aceptada. Ahora puedes trabajar en el incidente.", Severity.Success);
+            await CargarIncidencia();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al aceptar asignación: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task CompletarTrabajo()
+    {
+        if (asignacionActual == null || userId == null) return;
+
+        isSubmitting = true;
+        try
+        {
+            // Marcar la asignación como completada
+            await AsignacionService.CompletarAsignacionAsync(asignacionActual.AsignacionID, "Trabajo completado");
+            Snackbar.Add("Trabajo marcado como completado. Ahora puedes registrar la solución.", Severity.Success);
+            await CargarIncidencia();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al completar trabajo: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task ResolverIncidente()
+    {
+        if (incidente == null || asignacionActual == null || userId == null) return;
+
+        if (string.IsNullOrWhiteSpace(formModel.TituloSolucion) || string.IsNullOrWhiteSpace(formModel.DescripcionSolucion))
+        {
+            Snackbar.Add("Debes completar el título y la descripción de la solución", Severity.Warning);
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            // 1. Actualizar estado del incidente a "Resuelto"
+            var updateDto = new ActualizarEstadoDto
+            {
+                IncidenteID = incidente.IncidenteID,
+                Estado = "Resuelto",
+                Comentarios = $"Solución: {formModel.TituloSolucion}"
+            };
+            await IncidenteService.ActualizarEstadoAsync(updateDto);
+
+            // 2. Guardar en la base de conocimientos
+            var conocimientoDto = new CreateBaseConocimientoDto
+            {
+                Titulo = formModel.TituloSolucion,
+                Problema = incidente.Descripcion,
+                Solucion = formModel.DescripcionSolucion,
+                Categoria = formModel.Categoria,
+                PalabrasClaveStr = formModel.PalabrasClaveStr,
+                IncidenteRelacionadoID = incidente.IncidenteID
+            };
+            await BaseConocimientoService.CreateAsync(conocimientoDto, userId.Value);
+
+            Snackbar.Add("Incidente resuelto y solución guardada en la base de conocimientos", Severity.Success);
+            await CargarIncidencia();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al resolver incidente: {ex.Message}", Severity.Error);
+            Console.WriteLine($"[ActualizarIncidencia] Error: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task CerrarIncidente()
     {
         if (incidente == null) return;
 
@@ -172,19 +693,17 @@
             var updateDto = new ActualizarEstadoDto
             {
                 IncidenteID = incidente.IncidenteID,
-                Estado = formModel.Estado,
-                Comentarios = formModel.Comentarios
+                Estado = "Cerrado",
+                Comentarios = "Incidente cerrado"
             };
-
             await IncidenteService.ActualizarEstadoAsync(updateDto);
-            
-            Snackbar.Add("Estado actualizado exitosamente", Severity.Success);
-            Navigation.NavigateTo("/laboratorista/asignaciones");
+
+            Snackbar.Add("Incidente cerrado exitosamente", Severity.Success);
+            await CargarIncidencia();
         }
         catch (Exception ex)
         {
-            Snackbar.Add("Error al actualizar el estado", Severity.Error);
-            Console.WriteLine($"[ActualizarIncidencia] Error: {ex.Message}");
+            Snackbar.Add($"Error al cerrar incidente: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -204,9 +723,113 @@
         _ => Color.Info
     };
 
-    public class ActualizarEstadoModel
+    private Color GetEstadoColor(string estado) => estado switch
     {
-        public string Estado { get; set; } = string.Empty;
-        public string? Comentarios { get; set; }
+        "Abierto" => Color.Info,
+        "Asignado" => Color.Warning,
+        "En Proceso" => Color.Primary,
+        "Resuelto" => Color.Success,
+        "Cerrado" => Color.Dark,
+        _ => Color.Default
+    };
+
+    private Color GetEstadoAsignacionColor(string estado) => estado switch
+    {
+        "Pendiente" => Color.Warning,
+        "Aceptado" => Color.Info,
+        "Completado" => Color.Success,
+        _ => Color.Default
+    };
+
+    // Métodos para la línea de tiempo
+    private string GetEstadoActual()
+    {
+        // Flujo basado en Estados del Incidente y EstadoAsignacion
+        if (incidente == null) return "Reportado";
+        
+        // 6. Cerrado - Estado final
+        if (incidente.Estado == "Cerrado")
+            return "Cerrado";
+        
+        // 5. Resuelto - Esperando cierre
+        if (incidente.Estado == "Resuelto")
+            return "Resuelto";
+        
+        // Estados basados en asignación (si existe)
+        if (asignacionActual != null)
+        {
+            // 4. Trabajo Completado - El laboratorista marcó como completado
+            if (asignacionActual.EstadoAsignacion == "Completado")
+                return "Completado";
+            
+            // 3. Trabajo Iniciado - El laboratorista aceptó y está trabajando
+            if (asignacionActual.EstadoAsignacion == "Aceptado")
+                return "Iniciado";
+            
+            // 2. Asignado - Tiene asignación pero pendiente de aceptar
+            if (asignacionActual.EstadoAsignacion == "Pendiente")
+                return "Asignado";
+        }
+        
+        // 1. Reportado - Sin asignación
+        return "Reportado";
+    }
+
+    private Color GetTimelineColor(string paso)
+    {
+        var estadoActual = GetEstadoActual();
+        var pasos = new[] { "Reportado", "Asignado", "Iniciado", "Completado", "Resuelto", "Cerrado" };
+        var indiceActual = Array.IndexOf(pasos, estadoActual);
+        var indicePaso = Array.IndexOf(pasos, paso);
+
+        if (indicePaso < indiceActual)
+            return Color.Success; // Completado
+        else if (indicePaso == indiceActual)
+            return paso switch
+            {
+                "Reportado" => Color.Info,
+                "Asignado" => Color.Warning,
+                "Iniciado" => Color.Primary,
+                "Completado" => Color.Success,
+                "Resuelto" => Color.Success,
+                "Cerrado" => Color.Dark,
+                _ => Color.Default
+            };
+        else
+            return Color.Default; // Pendiente
+    }
+
+    private Size GetTimelineSize(string paso)
+    {
+        var estadoActual = GetEstadoActual();
+        return paso == estadoActual ? Size.Medium : Size.Small;
+    }
+
+    private Variant GetTimelineVariant(string paso)
+    {
+        var estadoActual = GetEstadoActual();
+        var pasos = new[] { "Reportado", "Asignado", "Iniciado", "Completado", "Resuelto", "Cerrado" };
+        var indiceActual = Array.IndexOf(pasos, estadoActual);
+        var indicePaso = Array.IndexOf(pasos, paso);
+
+        if (indicePaso <= indiceActual)
+            return Variant.Filled; // Ya completado o actual
+        else
+            return Variant.Outlined; // Pendiente
+    }
+
+    public class ResolverIncidenteModel
+    {
+        public string TituloSolucion { get; set; } = string.Empty;
+        public string DescripcionSolucion { get; set; } = string.Empty;
+        public string Categoria { get; set; } = string.Empty;
+        public string PalabrasClaveStr { get; set; } = string.Empty;
+    }
+
+    public class AsignacionFormModel
+    {
+        public string? TecnicoSeleccionadoId { get; set; }
+        public string? TipoAsignacion { get; set; } = "Normal";
+        public string? Notas { get; set; }
     }
 }

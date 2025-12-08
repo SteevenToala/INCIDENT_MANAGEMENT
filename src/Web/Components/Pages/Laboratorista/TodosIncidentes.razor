@@ -1,4 +1,4 @@
-@page "/laboratorista/asignaciones"
+@page "/laboratorista/todos-incidentes"
 @attribute [Authorize(Roles = "Laboratorista")]
 @rendermode InteractiveServer
 @using MudBlazor
@@ -10,10 +10,10 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 
-<PageTitle>Mis Tareas Asignadas</PageTitle>
+<PageTitle>Todos los Incidentes</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-4">Mis Tareas Asignadas</MudText>
+    <MudText Typo="Typo.h4" Class="mb-4">Todos los Incidentes</MudText>
 
     @if (isLoading)
     {
@@ -26,13 +26,13 @@
     else
     {
         <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
-            <MudTabPanel Text="1. Pendiente" Icon="@Icons.Material.Filled.AssignmentInd" BadgeData="@incidentesAsignados.Count">
-                <MudTable Items="@incidentesAsignados" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
+            <MudTabPanel Text="1. Reportado / Pendiente" Icon="@Icons.Material.Filled.ReportProblem" BadgeData="@incidentesReportados.Count">
+                <MudTable Items="@incidentesReportados" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true" 
                           Filter="new Func<IncidenteDto, bool>(FilterFunc)" 
                           SortLabel="Ordenar por"
                           RowsPerPage="10">
                     <ToolBarContent>
-                        <MudText Typo="Typo.h6">1. Pendiente de Aceptación</MudText>
+                        <MudText Typo="Typo.h6">1. Reportado / Pendiente de Aceptación</MudText>
                         <MudSpacer />
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <select @bind="laboratorioSeleccionadoId" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
@@ -92,7 +92,7 @@
                         <MudTablePager InfoFormat="{first_item}-{last_item} de {all_items}" HideRowsPerPage="true" />
                     </PagerContent>
                     <NoRecordsContent>
-                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes asignados.</MudText>
+                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes reportados sin asignar.</MudText>
                     </NoRecordsContent>
                 </MudTable>
             </MudTabPanel>
@@ -103,7 +103,7 @@
                           SortLabel="Ordenar por"
                           RowsPerPage="10">
                     <ToolBarContent>
-                        <MudText Typo="Typo.h6">2. Trabajo Iniciado</MudText>
+                        <MudText Typo="Typo.h6">2. Trabajo Iniciado - En Progreso</MudText>
                         <MudSpacer />
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <select @bind="laboratorioSeleccionadoId" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
@@ -163,7 +163,7 @@
                         <MudTablePager InfoFormat="{first_item}-{last_item} de {all_items}" HideRowsPerPage="true" />
                     </PagerContent>
                     <NoRecordsContent>
-                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes con trabajo iniciado.</MudText>
+                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes en proceso.</MudText>
                     </NoRecordsContent>
                 </MudTable>
             </MudTabPanel>
@@ -234,7 +234,7 @@
                         <MudTablePager InfoFormat="{first_item}-{last_item} de {all_items}" HideRowsPerPage="true" />
                     </PagerContent>
                     <NoRecordsContent>
-                        <MudText Typo="Typo.body1" Class="pa-4">No hay trabajos completados.</MudText>
+                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes con trabajo iniciado.</MudText>
                     </NoRecordsContent>
                 </MudTable>
             </MudTabPanel>
@@ -305,7 +305,7 @@
                         <MudTablePager InfoFormat="{first_item}-{last_item} de {all_items}" HideRowsPerPage="true" />
                     </PagerContent>
                     <NoRecordsContent>
-                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes resueltos.</MudText>
+                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes con trabajo completado.</MudText>
                     </NoRecordsContent>
                 </MudTable>
             </MudTabPanel>
@@ -376,7 +376,7 @@
                         <MudTablePager InfoFormat="{first_item}-{last_item} de {all_items}" HideRowsPerPage="true" />
                     </PagerContent>
                     <NoRecordsContent>
-                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes cerrados.</MudText>
+                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes resueltos.</MudText>
                     </NoRecordsContent>
                 </MudTable>
             </MudTabPanel>
@@ -393,7 +393,7 @@
     private string rolSeleccionado = "";
     private string criterioBusqueda = "todos";
     
-    private List<IncidenteDto> incidentesPendientes = new();
+    private List<IncidenteDto> incidentesReportados = new();
     private List<IncidenteDto> incidentesAsignados = new();
     private List<IncidenteDto> incidentesIniciados = new();
     private List<IncidenteDto> incidentesCompletados = new();
@@ -430,11 +430,11 @@
         {
             var labs = await LaboratorioRepository.GetAllAsync();
             laboratorios = labs.ToList();
-            Console.WriteLine($"[MisTareas] Laboratorios cargados: {laboratorios.Count}");
+            Console.WriteLine($"[TodosIncidentes] Laboratorios cargados: {laboratorios.Count}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[MisTareas] Error cargando laboratorios: {ex.Message}");
+            Console.WriteLine($"[TodosIncidentes] Error cargando laboratorios: {ex.Message}");
         }
     }
 
@@ -445,51 +445,49 @@
 
         try
         {
-            if (userId == null)
-            {
-                errorMessage = "No se pudo identificar al usuario.";
-                return;
-            }
-
-            // Mostrar solo las incidencias asignadas al laboratorista actual
-            var todasIncidencias = await IncidenteService.GetIncidentesByTecnicoAsync(userId.Value);
+            // Mostrar todas las incidencias del sistema
+            var todasIncidencias = await IncidenteService.GetAllIncidentesAsync();
             
-            Console.WriteLine($"[MisTareas] Total incidencias asignadas: {todasIncidencias.Count()}");
+            Console.WriteLine($"[TodosIncidentes] Total incidencias: {todasIncidencias.Count()}");
             
             // Filtrar según el flujo completo basado en Estado y EstadoAsignacion (igual que GetEstadoActual)
             // Prioridad jerárquica: Cerrado > Resuelto > Completado > Aceptado > Pendiente > Reportado
             
-            // 5. Cerrado (Estado: "Cerrado") - Máxima prioridad
+            // 6. Cerrado (Estado: "Cerrado") - Máxima prioridad
             incidentesCerrados = todasIncidencias.Where(i => i.Estado == "Cerrado").ToList();
             
-            // 4. Resuelto (Estado: "Resuelto") - Segunda prioridad
+            // 5. Resuelto (Estado: "Resuelto") - Segunda prioridad
             incidentesResueltos = todasIncidencias.Where(i => i.Estado == "Resuelto" && i.Estado != "Cerrado").ToList();
             
-            // 3. Trabajo Completado (EstadoAsignacion: "Completado" pero NO Resuelto/Cerrado)
+            // 4. Trabajo Completado (EstadoAsignacion: "Completado" pero NO Resuelto/Cerrado)
             incidentesCompletados = todasIncidencias.Where(i => 
                 i.EstadoAsignacion == "Completado" && i.Estado != "Resuelto" && i.Estado != "Cerrado"
             ).ToList();
             
-            // 2. Trabajo Iniciado (EstadoAsignacion: "Aceptado" pero NO Completado/Resuelto/Cerrado)
+            // 3. Trabajo Iniciado (EstadoAsignacion: "Aceptado" pero NO Completado/Resuelto/Cerrado)
             incidentesIniciados = todasIncidencias.Where(i => 
                 i.EstadoAsignacion == "Aceptado" && i.EstadoAsignacion != "Completado" &&
                 i.Estado != "Resuelto" && i.Estado != "Cerrado"
             ).ToList();
             
-            // 1. Reportado / Pendiente de Aceptación (EstadoAsignacion: Pendiente o null, NO en estados superiores)
-            incidentesAsignados = todasIncidencias.Where(i => 
-                (string.IsNullOrEmpty(i.EstadoAsignacion) || i.EstadoAsignacion == "Pendiente") &&
+            // 2. Asignado (Ya no se usa - se movió a pestaña 1)
+            incidentesAsignados = new List<IncidenteDto>();
+            
+            // 1. Reportado / Pendiente de Aceptación (sin asignar O asignado pero pendiente, NO en estados superiores)
+            incidentesReportados = todasIncidencias.Where(i => 
+                ((i.Estado == "Abierto" && i.TecnicoID == null) || 
+                (i.TecnicoID != null && (string.IsNullOrEmpty(i.EstadoAsignacion) || i.EstadoAsignacion == "Pendiente"))) &&
                 i.EstadoAsignacion != "Aceptado" && i.EstadoAsignacion != "Completado" &&
                 i.Estado != "Resuelto" && i.Estado != "Cerrado"
             ).ToList();
             
-            Console.WriteLine($"[MisTareas] Asignados: {incidentesAsignados.Count}, Iniciados: {incidentesIniciados.Count}, Completados: {incidentesCompletados.Count}, Resueltos: {incidentesResueltos.Count}, Cerrados: {incidentesCerrados.Count}");
+            Console.WriteLine($"[TodosIncidentes] Reportados: {incidentesReportados.Count}, Asignados: {incidentesAsignados.Count}, Iniciados: {incidentesIniciados.Count}, Completados: {incidentesCompletados.Count}, Resueltos: {incidentesResueltos.Count}, Cerrados: {incidentesCerrados.Count}");
         }
         catch (Exception ex)
         {
-            errorMessage = "Error al cargar las incidencias asignadas.";
-            Console.WriteLine($"[MisTareas] Error: {ex.Message}");
-            Console.WriteLine($"[MisTareas] Stack: {ex.StackTrace}");
+            errorMessage = "Error al cargar las incidencias.";
+            Console.WriteLine($"[TodosIncidentes] Error: {ex.Message}");
+            Console.WriteLine($"[TodosIncidentes] Stack: {ex.StackTrace}");
         }
         finally
         {

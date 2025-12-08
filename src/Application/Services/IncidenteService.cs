@@ -34,9 +34,12 @@ public class IncidenteService : IIncidenteService
 
     public async Task<IEnumerable<IncidenteDto>> GetIncidentesByTecnicoAsync(int tecnicoId)
     {
-        // Obtener todas las incidencias para que el laboratorista pueda verlas y asignarlas
+        // Obtener todas las incidencias asignadas al técnico (incluyendo completadas y cerradas)
         var incidentes = await _incidenteRepository.GetAllAsync();
-        return incidentes.Select(MapToDto);
+        var incidentesAsignados = incidentes.Where(i => 
+            i.Asignaciones.Any(a => a.UsuarioAsignadoID == tecnicoId)
+        );
+        return incidentesAsignados.Select(i => MapToDtoConAsignacion(i, tecnicoId));
     }
 
     public async Task<IncidenteDto?> GetIncidenteByIdAsync(int id)
@@ -149,7 +152,37 @@ public class IncidenteService : IIncidenteService
             LaboratorioNombre = incidente.Laboratorio?.Nombre ?? "",
             UsuarioReportador = incidente.UsuarioReportador?.NombreCompleto ?? "",
             EstudianteNombre = incidente.UsuarioReportador?.NombreCompleto ?? "",
-            RolReportador = incidente.UsuarioReportador?.Rol?.Nombre ?? ""
+            RolReportador = incidente.UsuarioReportador?.Rol?.Nombre ?? "",
+            EstadoAsignacion = incidente.Asignaciones.FirstOrDefault(a => a.FechaCompletacion == null)?.EstadoAsignacion
+        };
+    }
+
+    private IncidenteDto MapToDtoConAsignacion(Incidente incidente, int tecnicoId)
+    {
+        // Obtener la asignación más reciente del técnico (sin filtrar por FechaCompletacion)
+        var asignacionTecnico = incidente.Asignaciones
+            .Where(a => a.UsuarioAsignadoID == tecnicoId)
+            .OrderByDescending(a => a.FechaAsignacion)
+            .FirstOrDefault();
+
+        return new IncidenteDto
+        {
+            IncidenteID = incidente.IncidenteID,
+            CodigoIncidente = incidente.CodigoIncidente,
+            Titulo = incidente.Titulo,
+            Descripcion = incidente.Descripcion,
+            Prioridad = incidente.Prioridad,
+            Estado = incidente.Estado,
+            FechaReporte = incidente.FechaCreacion,
+            FechaCreacion = incidente.FechaCreacion,
+            FechaResolucion = incidente.FechaResolucion,
+            TecnicoID = asignacionTecnico?.UsuarioAsignadoID,
+            ComputadoraNombre = incidente.Computadora?.CodigoEquipo ?? "",
+            LaboratorioNombre = incidente.Laboratorio?.Nombre ?? "",
+            UsuarioReportador = incidente.UsuarioReportador?.NombreCompleto ?? "",
+            EstudianteNombre = incidente.UsuarioReportador?.NombreCompleto ?? "",
+            RolReportador = incidente.UsuarioReportador?.Rol?.Nombre ?? "",
+            EstadoAsignacion = asignacionTecnico?.EstadoAsignacion
         };
     }
 

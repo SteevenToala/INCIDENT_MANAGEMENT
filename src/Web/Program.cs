@@ -37,11 +37,13 @@ builder.Services.AddScoped<INotificacionRepository, NotificacionRepository>();
 builder.Services.AddScoped<IFacultadRepository, FacultadRepository>();
 builder.Services.AddScoped<ILaboratorioRepository, LaboratorioRepository>();
 builder.Services.AddScoped<IComputadoraRepository, ComputadoraRepository>();
+builder.Services.AddScoped<IAsignacionRepository, AsignacionRepository>();
 
 // Add Application Services
 builder.Services.AddScoped<IIncidenteService, IncidenteService>();
 builder.Services.AddScoped<IBaseConocimientoService, BaseConocimientoService>();
 builder.Services.AddScoped<IEstudiantePortalService, EstudiantePortalService>();
+builder.Services.AddScoped<IAsignacionService, AsignacionService>();
 
 // Add HttpContextAccessor para acceder a cookies
 builder.Services.AddHttpContextAccessor();

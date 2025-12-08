@@ -19,5 +19,6 @@ public class CreateBaseConocimientoDto
     public string Solucion { get; set; } = string.Empty;
     public string? Categoria { get; set; }
     public string? PalabrasClave { get; set; }
+    public string? PalabrasClaveStr { get; set; }
     public int? IncidenteRelacionadoID { get; set; }
 }
