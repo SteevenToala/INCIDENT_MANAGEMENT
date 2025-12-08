@@ -31,9 +31,23 @@ public class AuthController : Controller
     {
         try
         {
+            Console.WriteLine($"[Login] Email recibido: '{request.Email}'");
+            Console.WriteLine($"[Login] Password recibido: '{request.Password}'");
+            
             var usuario = await _usuarioRepository.GetByEmailAsync(request.Email);
 
-            if (usuario == null || usuario.Contraseña != request.Password || !usuario.Activo)
+            if (usuario == null)
+            {
+                Console.WriteLine("[Login] Usuario no encontrado");
+                return Redirect($"/login?error={Uri.EscapeDataString("Credenciales inválidas")}");
+            }
+
+            Console.WriteLine($"[Login] Usuario encontrado: {usuario.Email}");
+            Console.WriteLine($"[Login] Contraseña BD: '{usuario.Contraseña}'");
+            Console.WriteLine($"[Login] Usuario activo: {usuario.Activo}");
+            Console.WriteLine($"[Login] Contraseñas coinciden: {usuario.Contraseña == request.Password}");
+
+            if (usuario.Contraseña != request.Password || !usuario.Activo)
             {
                 return Redirect($"/login?error={Uri.EscapeDataString("Credenciales inválidas")}");
             }

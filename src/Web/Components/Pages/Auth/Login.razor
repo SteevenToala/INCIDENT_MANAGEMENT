@@ -1,9 +1,7 @@
 @page "/login"
-@rendermode InteractiveServer
 @using Microsoft.AspNetCore.WebUtilities
-@inject AuthenticationStateProvider AuthStateProvider
+@using System.ComponentModel.DataAnnotations
 @inject NavigationManager Navigation
-@inject IJSRuntime JS
 
 <PageTitle>Login - Sistema de Incidencias</PageTitle>
 
@@ -18,26 +16,28 @@
         </MudText>
 
         <form method="post" action="/auth/login">
-            <input type="hidden" name="ReturnUrl" value="@returnUrl" />
-            <input type="hidden" name="Email" value="@email" />
-            <input type="hidden" name="Password" value="@password" />
+            @if (!string.IsNullOrEmpty(returnUrl))
+            {
+                <input type="hidden" name="ReturnUrl" value="@returnUrl" />
+            }
 
-            <MudTextField @bind-Value="email"
-                          Label="Email"
-                          Variant="Variant.Outlined"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Email"
-                          Class="mb-4"
-                          InputAttributes="@emailInputAttributes" />
+            <MudPaper Elevation="0" Class="mb-4">
+                <label style="display: block; margin-bottom: 8px; color: rgba(0,0,0,0.6); font-size: 0.875rem;">Email</label>
+                <input type="email" 
+                       name="Email" 
+                       required 
+                       style="width: 100%; padding: 16px; border: 1px solid rgba(0,0,0,0.23); border-radius: 4px; font-size: 1rem; font-family: inherit;"
+                       placeholder="Ingresa tu email" />
+            </MudPaper>
 
-            <MudTextField @bind-Value="password"
-                          Label="Contraseña"
-                          Variant="Variant.Outlined"
-                          InputType="InputType.Password"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Lock"
-                          Class="mb-6"
-                          InputAttributes="@passwordInputAttributes" />
+            <MudPaper Elevation="0" Class="mb-6">
+                <label style="display: block; margin-bottom: 8px; color: rgba(0,0,0,0.6); font-size: 0.875rem;">Contraseña</label>
+                <input type="password" 
+                       name="Password" 
+                       required 
+                       style="width: 100%; padding: 16px; border: 1px solid rgba(0,0,0,0.23); border-radius: 4px; font-size: 1rem; font-family: inherit;"
+                       placeholder="Ingresa tu contraseña" />
+            </MudPaper>
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
@@ -56,52 +56,23 @@
 </MudContainer>
 
 @code {
-    private string email = "";
-    private string password = "";
     private string errorMessage = "";
-        private string? returnUrl;
-    private readonly Dictionary<string, object> emailInputAttributes = new()
-    {
-        { "name", "Email" },
-        { "autocomplete", "email" }
-    };
+    private string? returnUrl;
 
-    private readonly Dictionary<string, object> passwordInputAttributes = new()
+    protected override void OnInitialized()
     {
-        { "name", "Password" },
-        { "autocomplete", "current-password" }
-    };
-
-    protected override async Task OnInitializedAsync()
-    {
-        // Si ya está autenticado, redirigir
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        if (authState?.User?.Identity?.IsAuthenticated ?? false)
-        {
-            var user = authState.User;
-            var role = user.IsInRole("Estudiante") ? "estudiante" :
-                      user.IsInRole("Administrativo") ? "administrativo" :
-                      user.IsInRole("Laboratorista") ? "laboratorista" : null;
-            
-            if (role != null)
-            {
-                Console.WriteLine($"[Login] Usuario ya autenticado, redirigiendo a /{role}/home");
-                Navigation.NavigateTo($"/{role}/home");
-            }
-        }
-
         var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
         var queryParams = QueryHelpers.ParseQuery(uri.Query);
 
-            if (queryParams.TryGetValue("error", out var errorValues))
-            {
-                errorMessage = errorValues.FirstOrDefault() ?? string.Empty;
-            }
+        if (queryParams.TryGetValue("error", out var errorValues))
+        {
+            errorMessage = errorValues.FirstOrDefault() ?? string.Empty;
+        }
 
-            if (queryParams.TryGetValue("returnUrl", out var returnValues))
-            {
-                var rawValue = returnValues.FirstOrDefault();
-                returnUrl = string.IsNullOrWhiteSpace(rawValue) ? null : rawValue;
-            }
+        if (queryParams.TryGetValue("returnUrl", out var returnValues))
+        {
+            var rawValue = returnValues.FirstOrDefault();
+            returnUrl = string.IsNullOrWhiteSpace(rawValue) ? null : rawValue;
+        }
     }
 }

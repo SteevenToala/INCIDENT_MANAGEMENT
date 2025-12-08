@@ -48,6 +48,9 @@ builder.Services.AddScoped<IAsignacionService, AsignacionService>();
 builder.Services.AddScoped<INotificacionService, NotificacionService>();
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 
+// Add Web Services
+builder.Services.AddScoped<AuthService>();
+
 // Add HttpContextAccessor para acceder a cookies
 builder.Services.AddHttpContextAccessor();
 
