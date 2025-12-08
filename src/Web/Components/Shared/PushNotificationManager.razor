@@ -1,0 +1,150 @@
+@using Microsoft.JSInterop
+@using IncidentManagement.Application.Interfaces
+@using IncidentManagement.Domain.Entities
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@inject IJSRuntime JS
+@inject ISuscripcionPushRepository SuscripcionRepository
+@inject IConfiguration Configuration
+@inject AuthenticationStateProvider AuthStateProvider
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Console.WriteLine("[Push Component] OnAfterRenderAsync ejecutándose - firstRender=true");
+            // Esperar un poco para que el script se cargue
+            await Task.Delay(1000);
+            await InicializarNotificacionesPush();
+        }
+    }
+
+    private async Task InicializarNotificacionesPush()
+    {
+        try
+        {
+            Console.WriteLine("[Push Component] === INICIANDO PROCESO DE SUSCRIPCIÓN ===");
+            
+            // Log del entorno
+            var userAgent = await JS.InvokeAsync<string>("eval", "navigator.userAgent");
+            Console.WriteLine($"[Push Component] User Agent: {userAgent}");
+            
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (!authState.User.Identity?.IsAuthenticated ?? true)
+            {
+                Console.WriteLine("[Push Component] Usuario no autenticado, abortando");
+                return;
+            }
+
+            var userIdClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int usuarioId))
+            {
+                Console.WriteLine("[Push Component] No se pudo obtener UsuarioID del claim");
+                Console.WriteLine($"[Push Component] Claims disponibles: {string.Join(", ", authState.User.Claims.Select(c => c.Type))}");
+                return;
+            }
+
+            Console.WriteLine($"[Push Component] Usuario autenticado: ID={usuarioId}");
+
+            // Verificar si ya está suscrito
+            var suscripcionExistente = await SuscripcionRepository.GetActivasByUsuarioAsync(usuarioId);
+            if (suscripcionExistente.Any())
+            {
+                Console.WriteLine($"[Push Component] Usuario {usuarioId} ya tiene {suscripcionExistente.Count()} suscripción(es) activa(s)");
+                return;
+            }
+
+            Console.WriteLine("[Push Component] No hay suscripciones activas, procediendo...");
+
+            // Obtener clave pública VAPID
+            var vapidPublicKey = Configuration["PushNotifications:VapidPublicKey"];
+            if (string.IsNullOrEmpty(vapidPublicKey))
+            {
+                Console.WriteLine("[Push Component] ERROR: No se encontró la clave pública VAPID en configuración");
+                return;
+            }
+
+            Console.WriteLine($"[Push Component] VAPID Key obtenida: {vapidPublicKey.Substring(0, 20)}...");
+
+            // Verificar que el objeto PushNotifications existe
+            var hasPushNotifications = await JS.InvokeAsync<bool>("eval", "typeof window.PushNotifications !== 'undefined'");
+            Console.WriteLine($"[Push Component] ¿Existe window.PushNotifications? {hasPushNotifications}");
+
+            if (!hasPushNotifications)
+            {
+                Console.WriteLine("[Push Component] ERROR: window.PushNotifications no está definido. El script no se cargó.");
+                
+                // Intentar cargar el script dinámicamente
+                await JS.InvokeVoidAsync("eval", @"
+                    if (!document.querySelector('script[src=""/js/push-notifications.js""]')) {
+                        var script = document.createElement('script');
+                        script.src = '/js/push-notifications.js';
+                        document.head.appendChild(script);
+                        console.log('[Push Component] Script cargado dinámicamente');
+                    }
+                ");
+                
+                await Task.Delay(2000); // Esperar a que se cargue
+                
+                hasPushNotifications = await JS.InvokeAsync<bool>("eval", "typeof window.PushNotifications !== 'undefined'");
+                Console.WriteLine($"[Push Component] ¿Existe window.PushNotifications después de carga dinámica? {hasPushNotifications}");
+                
+                if (!hasPushNotifications)
+                {
+                    Console.WriteLine("[Push Component] ERROR: No se pudo cargar el script dinámicamente");
+                    return;
+                }
+            }
+
+            // Inicializar suscripción
+            Console.WriteLine("[Push Component] Invocando PushNotifications.initialize...");
+            var result = await JS.InvokeAsync<PushSubscriptionResult>("PushNotifications.initialize", vapidPublicKey);
+            
+            Console.WriteLine($"[Push Component] Resultado: Success={result.Success}, Error={result.Error}");
+
+            if (result.Success && result.Subscription != null)
+            {
+                Console.WriteLine($"[Push Component] Suscripción exitosa!");
+                Console.WriteLine($"[Push Component] Endpoint: {result.Subscription.Endpoint.Substring(0, Math.Min(50, result.Subscription.Endpoint.Length))}...");
+                
+                // Guardar suscripción en la base de datos
+                var suscripcion = new SuscripcionPush
+                {
+                    UsuarioID = usuarioId,
+                    Endpoint = result.Subscription.Endpoint,
+                    P256DH = result.Subscription.P256dh,
+                    Auth = result.Subscription.Auth,
+                    Activa = true,
+                    FechaCreacion = DateTime.Now
+                };
+
+                await SuscripcionRepository.CreateAsync(suscripcion);
+                Console.WriteLine($"[Push Component] ✓ Suscripción guardada en BD para usuario {usuarioId}");
+            }
+            else
+            {
+                Console.WriteLine($"[Push Component] ✗ Error al suscribir: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Push Component] ❌ EXCEPCIÓN: {ex.Message}");
+            Console.WriteLine($"[Push Component] Stack trace: {ex.StackTrace}");
+        }
+    }
+
+    private class PushSubscriptionResult
+    {
+        public bool Success { get; set; }
+        public string? Error { get; set; }
+        public PushSubscriptionData? Subscription { get; set; }
+    }
+
+    private class PushSubscriptionData
+    {
+        public string Endpoint { get; set; } = string.Empty;
+        public string P256dh { get; set; } = string.Empty;
+        public string Auth { get; set; } = string.Empty;
+    }
+}
