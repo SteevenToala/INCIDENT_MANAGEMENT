@@ -81,15 +81,26 @@
 
         userName = user.Identity?.Name ?? user.FindFirstValue(ClaimTypes.Email) ?? "Usuario";
         userRole = user.FindFirstValue(ClaimTypes.Role) ?? "Usuario";
+        
+        // Verificar si es Supervisor
+        var esAsignadorClaim = user.FindFirstValue("EsAsignador");
+        var esAsignador = false;
+        
+        if (!string.IsNullOrEmpty(esAsignadorClaim))
+        {
+            bool.TryParse(esAsignadorClaim, out esAsignador);
+        }
+        
+        Console.WriteLine($"[NavMenu] Usuario: {userName}, Rol: {userRole}, EsAsignador: {esAsignador}");
 
         menuSections.Clear();
-        foreach (var section in BuildMenuForRole(userRole))
+        foreach (var section in BuildMenuForRole(userRole, esAsignador))
         {
             menuSections.Add(section);
         }
     }
 
-    private static IEnumerable<MenuSection> BuildMenuForRole(string role)
+    private static IEnumerable<MenuSection> BuildMenuForRole(string role, bool esAsignador = false)
     {
         var normalizedRole = role.ToLowerInvariant();
 
@@ -100,7 +111,8 @@
                 "estudiante" => new MenuItem("Inicio", "/estudiante/home", Icons.Material.Filled.Home, true),
                 "docente" => new MenuItem("Inicio", "/docente/home", Icons.Material.Filled.Home, true),
                 "administrativo" => new MenuItem("Panel", "/administrativo/home", Icons.Material.Filled.Dashboard, true),
-                "laboratorista" => new MenuItem("Panel", "/laboratorista/home", Icons.Material.Filled.Build, true),
+                "laboratorista" when esAsignador => new MenuItem("Panel Supervisor", "/laboratorista/home", Icons.Material.Filled.SupervisorAccount, true),
+                "laboratorista" => new MenuItem("Panel Técnico", "/laboratorista/home", Icons.Material.Filled.Build, true),
                 _ => new MenuItem("Inicio", "/", Icons.Material.Filled.Home, true)
             },
             new MenuItem("Notificaciones", "/notificaciones", Icons.Material.Filled.Notifications)
@@ -144,12 +156,23 @@
                     new MenuItem("Base de conocimiento", "/administrativo/conocimientos", Icons.Material.Filled.MenuBook)
                 })
             },
+            "laboratorista" when esAsignador => new[]
+            {
+                new MenuSection("Incidentes", new[]
+                {
+                    new MenuItem("Mis tareas", "/laboratorista/mis-tareas", Icons.Material.Filled.Task),
+                    new MenuItem("Gestionar incidentes", "/laboratorista/todos-incidentes", Icons.Material.Filled.Assignment),
+                }),
+                new MenuSection("Recursos", new[]
+                {
+                    new MenuItem("Base de conocimiento", "/laboratorista/base-conocimiento", Icons.Material.Filled.MenuBook)
+                })
+            },
             "laboratorista" => new[]
             {
                 new MenuSection("Incidentes", new[]
                 {
-                    new MenuItem("Mis tareas", "/laboratorista/asignaciones", Icons.Material.Filled.Task),
-                    new MenuItem("Todos los incidentes", "/laboratorista/todos-incidentes", Icons.Material.Filled.Assignment)
+                    new MenuItem("Mis tareas", "/laboratorista/mis-tareas", Icons.Material.Filled.Task)
                 }),
                 new MenuSection("Recursos", new[]
                 {

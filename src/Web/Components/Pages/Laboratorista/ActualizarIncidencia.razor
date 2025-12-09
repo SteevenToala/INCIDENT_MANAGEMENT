@@ -490,9 +490,9 @@
 
         userId = user.GetUserId();
         
-        // Verificar si el usuario tiene permiso de asignador
-        var roles = user.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role).Select(c => c.Value);
-        esAsignador = roles.Contains("Laboratorista"); // Todos los laboratoristas pueden asignar
+        // Verificar si el usuario tiene permiso de asignador (Supervisor)
+        var esAsignadorClaim = user.Claims.FirstOrDefault(c => c.Type == "EsAsignador");
+        esAsignador = esAsignadorClaim != null && bool.Parse(esAsignadorClaim.Value);
 
         if (!IncidenteId.HasValue)
         {

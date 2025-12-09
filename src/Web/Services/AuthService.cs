@@ -31,6 +31,8 @@ public class AuthService
                 return (false, null, "Email no encontrado");
             }
 
+            Console.WriteLine($"[AuthService] Usuario encontrado: {usuario.Email}, EsAsignador DB: {usuario.EsAsignador} (tipo: {usuario.EsAsignador.GetType()})");
+
             if (usuario.Contraseña != password)
             {
                 return (false, null, "Contraseña incorrecta");
@@ -60,8 +62,11 @@ public class AuthService
                 new Claim(ClaimTypes.NameIdentifier, usuario.UsuarioID.ToString()),
                 new Claim(ClaimTypes.Name, usuario.NombreCompleto),
                 new Claim(ClaimTypes.Email, usuario.Email),
-                new Claim(ClaimTypes.Role, usuario.Rol?.Nombre ?? "Usuario")
+                new Claim(ClaimTypes.Role, usuario.Rol?.Nombre ?? "Usuario"),
+                new Claim("EsAsignador", usuario.EsAsignador ? "True" : "False")
             };
+
+            Console.WriteLine($"[AuthService] Login: {usuario.Email}, EsAsignador: {usuario.EsAsignador}, Claim: {(usuario.EsAsignador ? "True" : "False")}, FacultadID: {usuario.FacultadID}");
 
             var identity = new ClaimsIdentity(claims, "MyCookieAuth");
             var principal = new ClaimsPrincipal(identity);

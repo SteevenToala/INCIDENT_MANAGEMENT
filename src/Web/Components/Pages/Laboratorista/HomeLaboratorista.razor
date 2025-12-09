@@ -1,6 +1,10 @@
 @page "/laboratorista/home"
 @rendermode InteractiveServer
+@using MudBlazor
+@using IncidentManagement.Application.Interfaces
 @inject AuthenticationStateProvider AuthStateProvider
+@inject IIncidenteService IncidenteService
+@inject IAsignacionService AsignacionService
 @inject NavigationManager Navigation
 
 <PageTitle>Home Laboratorista</PageTitle>
@@ -8,10 +12,26 @@
 <PushNotificationManager />
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
-    <MudText Typo="Typo.h3" Class="mb-6">
-        <MudIcon Icon="@Icons.Material.Filled.Build" Class="me-2" />
-        Panel Laboratorista - @userName
-    </MudText>
+    @if (esAsignador)
+    {
+        <MudText Typo="Typo.h3" Class="mb-2">
+            <MudIcon Icon="@Icons.Material.Filled.SupervisorAccount" Class="me-2" />
+            Panel Supervisor - @userName
+        </MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-6">
+            Gestiona y supervisa los incidentes de tu facultad
+        </MudText>
+    }
+    else
+    {
+        <MudText Typo="Typo.h3" Class="mb-2">
+            <MudIcon Icon="@Icons.Material.Filled.Build" Class="me-2" />
+            Panel Técnico - @userName
+        </MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-6">
+            Resuelve los incidentes asignados a ti
+        </MudText>
+    }
 
     <MudGrid>
         <MudItem xs="12" sm="6" md="4">
@@ -55,23 +75,52 @@
     </MudGrid>
 
     <MudPaper Elevation="3" Class="mt-6 pa-6">
-        <MudText Typo="Typo.h5" Class="mb-4">Acciones</MudText>
-        <MudStack Row="true" Spacing="3">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.List">
+        <MudText Typo="Typo.h5" Class="mb-4">Acciones Rápidas</MudText>
+        <MudStack Row="true" Spacing="3" Class="flex-wrap">
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       StartIcon="@Icons.Material.Filled.List"
+                       Href="/laboratorista/mis-tareas">
                 Mis Asignaciones
             </MudButton>
-            <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.Book">
+            
+            @if (esAsignador)
+            {
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Secondary" 
+                           StartIcon="@Icons.Material.Filled.Assignment"
+                           Href="/laboratorista/todos-incidentes">
+                    Gestionar Incidentes
+                </MudButton>
+            }
+            
+            <MudButton Variant="Variant.Outlined" 
+                       Color="Color.Info" 
+                       StartIcon="@Icons.Material.Filled.Book"
+                       Href="/laboratorista/base-conocimiento">
                 Base de Conocimiento
-            </MudButton>
-            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Update">
-                Actualizar Estado
             </MudButton>
         </MudStack>
     </MudPaper>
+
+    @if (esAsignador)
+    {
+        <MudAlert Severity="Severity.Info" Class="mt-4" Icon="@Icons.Material.Filled.Info">
+            <strong>Rol Supervisor:</strong> Puedes asignar y reasignar incidentes a técnicos de tu facultad.
+        </MudAlert>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Info" Class="mt-4" Icon="@Icons.Material.Filled.Info">
+            <strong>Rol Técnico:</strong> Enfócate en resolver los incidentes que te han sido asignados.
+        </MudAlert>
+    }
 </MudContainer>
 
 @code {
     private string userName = "";
+    private bool esAsignador = false;
+    private int? userId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -93,6 +142,22 @@
         }
 
         userName = user.Identity?.Name ?? "Usuario";
-        Console.WriteLine($"[HomeLaboratorista] Autenticado: {userName}");
+        userId = user.GetUserId();
+        
+        // Verificar si es Supervisor (EsAsignador = 1)
+        var esAsignadorClaim = user.Claims.FirstOrDefault(c => c.Type == "EsAsignador");
+        
+        Console.WriteLine($"[HomeLaboratorista] Claims disponibles:");
+        foreach (var claim in user.Claims)
+        {
+            Console.WriteLine($"  - {claim.Type}: {claim.Value}");
+        }
+        
+        if (esAsignadorClaim != null && !string.IsNullOrEmpty(esAsignadorClaim.Value))
+        {
+            bool.TryParse(esAsignadorClaim.Value, out esAsignador);
+        }
+        
+        Console.WriteLine($"[HomeLaboratorista] Usuario: {userName}, EsAsignador Claim: {esAsignadorClaim?.Value ?? "NULL"}, EsAsignador Parsed: {esAsignador}");
     }
 }

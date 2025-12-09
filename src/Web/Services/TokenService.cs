@@ -35,8 +35,11 @@ public class TokenService : ITokenService
             new Claim(ClaimTypes.NameIdentifier, usuario.UsuarioID.ToString()),
             new Claim(ClaimTypes.Name, usuario.NombreCompleto),
             new Claim(ClaimTypes.Email, usuario.Email),
-            new Claim(ClaimTypes.Role, usuario.Rol?.Nombre ?? "Usuario")
+            new Claim(ClaimTypes.Role, usuario.Rol?.Nombre ?? "Usuario"),
+            new Claim("EsAsignador", usuario.EsAsignador.ToString())
         };
+        
+        Console.WriteLine($"[TokenService] Generando token para: {usuario.Email}, EsAsignador: {usuario.EsAsignador}");
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.SecretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

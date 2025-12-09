@@ -7,24 +7,40 @@
 @using IncidentManagement.Domain.Entities
 @inject IIncidenteService IncidenteService
 @inject ILaboratorioRepository LaboratorioRepository
+@inject IUsuarioRepository UsuarioRepository
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+@inject ISnackbar Snackbar
 
 <PageTitle>Todos los Incidentes</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-4">Todos los Incidentes</MudText>
-
-    @if (isLoading)
+    @if (!esAsignador)
     {
-        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
-    }
-    else if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+        <MudAlert Severity="Severity.Warning" Class="mb-4">
+            <strong>Acceso Restringido:</strong> Solo los Supervisores pueden ver todos los incidentes. Como técnico, puedes ver tus tareas asignadas en "Mis tareas".
+        </MudAlert>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/laboratorista/mis-tareas" StartIcon="@Icons.Material.Filled.Task">
+            Ir a Mis Tareas
+        </MudButton>
     }
     else
     {
+        <MudText Typo="Typo.h4" Class="mb-2">Gestión de Incidentes</MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-4">
+            Visualiza y asigna todos los incidentes de tu facultad
+        </MudText>
+
+        @if (isLoading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+        }
+        else
+        {
         <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
             <MudTabPanel Text="1. Reportado" Icon="@Icons.Material.Filled.ReportProblem" BadgeData="@incidentesReportados.Count">
                 <MudTable Items="@incidentesReportados" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true" 
@@ -452,13 +468,17 @@
                 </MudTable>
             </MudTabPanel>
         </MudTabs>
+        }
     }
+}
 </MudContainer>
 
 @code {
     private bool isLoading = true;
     private string? errorMessage;
     private int? userId;
+    private int? facultadId;
+    private bool esAsignador = false;
     private string searchString = "";
     private string laboratorioSeleccionadoId = "";
     private string rolSeleccionado = "";
@@ -492,6 +512,43 @@
             return;
         }
 
+        // Verificar si es Supervisor
+        var esAsignadorClaim = user.Claims.FirstOrDefault(c => c.Type == "EsAsignador");
+        Console.WriteLine($"[TodosIncidentes] EsAsignadorClaim: {esAsignadorClaim?.Value ?? "NULL"}");
+        
+        if (esAsignadorClaim != null && !string.IsNullOrEmpty(esAsignadorClaim.Value))
+        {
+            esAsignador = bool.Parse(esAsignadorClaim.Value);
+        }
+        
+        Console.WriteLine($"[TodosIncidentes] Usuario ID: {userId.Value}, EsAsignador: {esAsignador}");
+        
+        if (!esAsignador)
+        {
+            Console.WriteLine($"[TodosIncidentes] Usuario NO es supervisor - Acceso DENEGADO");
+            isLoading = false;
+            return; // No cargar datos si no es supervisor
+        }
+        
+        // Obtener facultad del usuario
+        var usuario = await UsuarioRepository.GetByIdAsync(userId.Value);
+        if (usuario == null)
+        {
+            errorMessage = "No se pudo encontrar información del usuario.";
+            isLoading = false;
+            return;
+        }
+        
+        if (!usuario.FacultadID.HasValue)
+        {
+            errorMessage = "Tu usuario no tiene una facultad asignada. Contacta al administrador.";
+            isLoading = false;
+            return;
+        }
+        
+        facultadId = usuario.FacultadID.Value;
+        Console.WriteLine($"[TodosIncidentes] Usuario: {usuario.NombreCompleto}, Email: {usuario.Email}, Facultad ID: {facultadId}, EsAsignador BD: {usuario.EsAsignador}");
+
         await CargarLaboratorios();
         await CargarIncidencias();
     }
@@ -501,7 +558,8 @@
         try
         {
             var labs = await LaboratorioRepository.GetAllAsync();
-            laboratorios = labs.ToList();
+            // Filtrar solo laboratorios de mi facultad
+            laboratorios = labs.Where(l => l.FacultadID == facultadId).ToList();
             Console.WriteLine($"[TodosIncidentes] Laboratorios cargados: {laboratorios.Count}");
         }
         catch (Exception ex)
@@ -517,8 +575,14 @@
 
         try
         {
-            // Mostrar todas las incidencias del sistema
-            var todasIncidencias = await IncidenteService.GetAllIncidentesAsync();
+            if (!facultadId.HasValue)
+            {
+                errorMessage = "No se pudo determinar la facultad.";
+                return;
+            }
+            
+            // Mostrar todas las incidencias DE MI FACULTAD
+            var todasIncidencias = await IncidenteService.GetIncidentesByFacultadAsync(facultadId.Value);
             
             Console.WriteLine($"[TodosIncidentes] Total incidencias: {todasIncidencias.Count()}");
             
