@@ -33,46 +33,79 @@
         </MudText>
     }
 
-    <MudGrid>
-        <MudItem xs="12" sm="6" md="4">
-            <MudCard Elevation="3">
-                <MudCardContent>
-                    <MudText Typo="Typo.h5">
-                        <MudIcon Icon="@Icons.Material.Filled.Assignment" Color="Color.Primary" />
-                        Asignadas
-                    </MudText>
-                    <MudText Typo="Typo.h3">0</MudText>
-                    <MudText Typo="Typo.body2">Casos activos</MudText>
-                </MudCardContent>
-            </MudCard>
-        </MudItem>
+    @if (isLoading)
+    {
+        <MudGrid>
+            @for (var i = 0; i < 3; i++)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudSkeleton Height="150px" Animation="Animation.Wave" />
+                </MudItem>
+            }
+        </MudGrid>
+    }
+    else if (!string.IsNullOrEmpty(loadError))
+    {
+        <MudAlert Severity="Severity.Error" Variant="Variant.Filled">@loadError</MudAlert>
+    }
+    else
+    {
+        <MudGrid Class="mb-6">
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="3" Class="h-100">
+                    <MudCardContent>
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.h6">
+                                <MudIcon Icon="@Icons.Material.Filled.Assignment" Color="Color.Primary" Class="me-1" />
+                                @(esAsignador ? "Incidentes Facultad" : "Asignadas a mí")
+                            </MudText>
+                            <MudText Typo="Typo.h3">@totalAsignadas</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">@(esAsignador ? "Total en mi facultad" : "Casos activos")</MudText>
+                        </MudStack>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="VerMisTareas">Ver detalles</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-        <MudItem xs="12" sm="6" md="4">
-            <MudCard Elevation="3">
-                <MudCardContent>
-                    <MudText Typo="Typo.h5">
-                        <MudIcon Icon="@Icons.Material.Filled.Construction" Color="Color.Warning" />
-                        En Proceso
-                    </MudText>
-                    <MudText Typo="Typo.h3">0</MudText>
-                    <MudText Typo="Typo.body2">Trabajando</MudText>
-                </MudCardContent>
-            </MudCard>
-        </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="3" Class="h-100">
+                    <MudCardContent>
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.h6">
+                                <MudIcon Icon="@Icons.Material.Filled.Engineering" Color="Color.Warning" Class="me-1" />
+                                En Proceso
+                            </MudText>
+                            <MudText Typo="Typo.h3">@incidentesEnProceso</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">Trabajando</MudText>
+                        </MudStack>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Warning" OnClick='() => VerPorEstado("En Proceso")'>Ver casos</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-        <MudItem xs="12" sm="6" md="4">
-            <MudCard Elevation="3">
-                <MudCardContent>
-                    <MudText Typo="Typo.h5">
-                        <MudIcon Icon="@Icons.Material.Filled.Done" Color="Color.Success" />
-                        Completadas
-                    </MudText>
-                    <MudText Typo="Typo.h3">0</MudText>
-                    <MudText Typo="Typo.body2">Este mes</MudText>
-                </MudCardContent>
-            </MudCard>
-        </MudItem>
-    </MudGrid>
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="3" Class="h-100">
+                    <MudCardContent>
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.h6">
+                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="me-1" />
+                                Completadas
+                            </MudText>
+                            <MudText Typo="Typo.h3">@incidentesResueltos</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">Este mes</MudText>
+                        </MudStack>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Success" OnClick='() => VerPorEstado("Resuelto")'>Ver historial</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    }
 
     <MudPaper Elevation="3" Class="mt-6 pa-6">
         <MudText Typo="Typo.h5" Class="mb-4">Acciones Rápidas</MudText>
@@ -121,6 +154,12 @@
     private string userName = "";
     private bool esAsignador = false;
     private int? userId;
+    private bool isLoading = true;
+    private string? loadError;
+
+    private int totalAsignadas = 0;
+    private int incidentesEnProceso = 0;
+    private int incidentesResueltos = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -159,5 +198,65 @@
         }
         
         Console.WriteLine($"[HomeLaboratorista] Usuario: {userName}, EsAsignador Claim: {esAsignadorClaim?.Value ?? "NULL"}, EsAsignador Parsed: {esAsignador}");
+
+        if (userId.HasValue)
+        {
+            await CargarEstadisticas();
+        }
+
+        isLoading = false;
+    }
+
+    private async Task CargarEstadisticas()
+    {
+        if (!userId.HasValue) return;
+
+        try
+        {
+            List<IncidentManagement.Application.DTOs.IncidenteDto> incidentes;
+
+            if (esAsignador)
+            {
+                // Supervisor: ver todos los incidentes de su facultad
+                var usuario = await IncidenteService.GetIncidentesByTecnicoAsync(userId.Value); // Para obtener la facultad
+                incidentes = (await IncidenteService.GetAllIncidentesAsync()).ToList(); // Filtrar después si es necesario
+            }
+            else
+            {
+                // Técnico: solo incidentes asignados a él
+                incidentes = (await IncidenteService.GetIncidentesByTecnicoAsync(userId.Value)).ToList();
+            }
+
+            totalAsignadas = incidentes.Count;
+            incidentesEnProceso = incidentes.Count(i => i.Estado == "En Proceso");
+            
+            var primerDiaMes = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            incidentesResueltos = incidentes.Count(i => 
+                (i.Estado == "Resuelto" || i.Estado == "Cerrado") && 
+                i.FechaResolucion.HasValue && 
+                i.FechaResolucion.Value >= primerDiaMes);
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Error al cargar estadísticas: {ex.Message}";
+            Console.WriteLine($"[HomeLaboratorista] Error: {ex}");
+        }
+    }
+
+    private void VerMisTareas()
+    {
+        if (esAsignador)
+        {
+            Navigation.NavigateTo("/laboratorista/todos-incidentes");
+        }
+        else
+        {
+            Navigation.NavigateTo("/laboratorista/mis-tareas");
+        }
+    }
+
+    private void VerPorEstado(string estado)
+    {
+        Navigation.NavigateTo($"/laboratorista/mis-tareas?estado={estado}");
     }
 }
