@@ -34,34 +34,37 @@
     <MudPaper Elevation="2" Class="pa-4 mb-4">
         <MudGrid>
             <MudItem xs="12" sm="6" md="3">
-                <MudSelect T="string" Label="Período" @bind-Value="periodoSeleccionado" Variant="Variant.Outlined" Dense="true">
-                    <MudSelectItem Value="@("hoy")">Hoy</MudSelectItem>
-                    <MudSelectItem Value="@("semana")">Esta Semana</MudSelectItem>
-                    <MudSelectItem Value="@("mes")">Este Mes</MudSelectItem>
-                    <MudSelectItem Value="@("trimestre")">Últimos 3 Meses</MudSelectItem>
-                    <MudSelectItem Value="@("año")">Este Año</MudSelectItem>
-                    <MudSelectItem Value="@("todo")">Todos los tiempos</MudSelectItem>
-                </MudSelect>
+                <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #666;">Período</label>
+                <select @bind="periodoSeleccionado" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: white; font-size: 14px;">
+                    <option value="hoy">Hoy</option>
+                    <option value="semana">Esta Semana</option>
+                    <option value="mes">Este Mes</option>
+                    <option value="trimestre">Últimos 3 Meses</option>
+                    <option value="año">Este Año</option>
+                    <option value="todo">Todos los tiempos</option>
+                </select>
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
-                <MudSelect T="string" Label="Estado" @bind-Value="estadoFiltro" Variant="Variant.Outlined" Dense="true">
-                    <MudSelectItem Value="@("")">Todos</MudSelectItem>
-                    <MudSelectItem Value="@("Abierto")">Abiertos</MudSelectItem>
-                    <MudSelectItem Value="@("En Proceso")">En Proceso</MudSelectItem>
-                    <MudSelectItem Value="@("Resuelto")">Resueltos</MudSelectItem>
-                    <MudSelectItem Value="@("Cerrado")">Cerrados</MudSelectItem>
-                </MudSelect>
+                <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #666;">Estado</label>
+                <select @bind="estadoFiltro" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: white; font-size: 14px;">
+                    <option value="">Todos</option>
+                    <option value="Abierto">Abiertos</option>
+                    <option value="En Proceso">En Proceso</option>
+                    <option value="Resuelto">Resueltos</option>
+                    <option value="Cerrado">Cerrados</option>
+                </select>
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
-                <MudSelect T="string" Label="Prioridad" @bind-Value="prioridadFiltro" Variant="Variant.Outlined" Dense="true">
-                    <MudSelectItem Value="@("")">Todas</MudSelectItem>
-                    <MudSelectItem Value="@("Crítica")">Crítica</MudSelectItem>
-                    <MudSelectItem Value="@("Alta")">Alta</MudSelectItem>
-                    <MudSelectItem Value="@("Media")">Media</MudSelectItem>
-                    <MudSelectItem Value="@("Baja")">Baja</MudSelectItem>
-                </MudSelect>
+                <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #666;">Prioridad</label>
+                <select @bind="prioridadFiltro" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: white; font-size: 14px;">
+                    <option value="">Todas</option>
+                    <option value="Crítica">Crítica</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Media">Media</option>
+                    <option value="Baja">Baja</option>
+                </select>
             </MudItem>
-            <MudItem xs="12" sm="6" md="3">
+            <MudItem xs="12" sm="6" md="3" Style="display: flex; align-items: flex-end;">
                 <MudButton Variant="Variant.Filled" Color="MudColor.Primary" FullWidth="true" 
                            StartIcon="@Icons.Material.Filled.FilterAlt" OnClick="AplicarFiltros">
                     Aplicar Filtros
@@ -248,7 +251,7 @@
             </MudItem>
 
             <!-- Top laboratorios con más incidentes -->
-            <MudItem xs="12" md="6" lg="4">
+            <MudItem xs="12" md="6">
                 <MudPaper Elevation="4" Class="pa-4" Style="height: 350px;">
                     <MudText Typo="Typo.h6" Class="mb-3">
                         <MudIcon Icon="@Icons.Material.Filled.Computer" Class="me-2" />
@@ -262,41 +265,36 @@
                                     <MudText Typo="Typo.body2">@lab.Nombre</MudText>
                                     <MudChip Size="MudSize.Small" Color="MudColor.Primary">@lab.Cantidad</MudChip>
                                 </MudStack>
-                                <MudProgressLinear Color="MudColor.Primary" Value="@((lab.Cantidad / (double)totalIncidentes) * 100)" />
+                                <MudProgressLinear Color="MudColor.Primary" Value="@((lab.Cantidad / (double)Math.Max(totalIncidentes, 1)) * 100)" />
                             </MudListItem>
                         }
                     </MudList>
                 </MudPaper>
             </MudItem>
 
-            <!-- Métricas adicionales -->
-            <MudItem xs="12" md="6" lg="4">
+            <!-- Incidentes recientes -->
+            <MudItem xs="12" md="6">
                 <MudPaper Elevation="4" Class="pa-4" Style="height: 350px;">
                     <MudText Typo="Typo.h6" Class="mb-3">
-                        <MudIcon Icon="@Icons.Material.Filled.Analytics" Class="me-2" />
-                        Métricas Clave
+                        <MudIcon Icon="@Icons.Material.Filled.NewReleases" Class="me-2" />
+                        Incidentes Recientes
                     </MudText>
-                    <MudStack Spacing="3">
-                        <MudStack Spacing="1">
-                            <MudText Typo="Typo.body2" Class="text-muted">Incidentes Hoy</MudText>
-                            <MudText Typo="Typo.h5">@incidentesHoy</MudText>
-                            <MudProgressLinear Color="MudColor.Info" Value="@((incidentesHoy / Math.Max(totalIncidentes, 1.0)) * 100)" />
-                        </MudStack>
-                        <MudDivider />
-                        <MudStack Spacing="1">
-                            <MudText Typo="Typo.body2" Class="text-muted">Incidentes Críticos Abiertos</MudText>
-                            <MudText Typo="Typo.h5" Color="MudColor.Error">@incidentesCriticosAbiertos</MudText>
-                            @if (incidentesCriticosAbiertos > 0)
-                            {
-                                <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-1">Requiere atención inmediata</MudAlert>
-                            }
-                        </MudStack>
-                        <MudDivider />
-                        <MudStack Spacing="1">
-                            <MudText Typo="Typo.body2" Class="text-muted">Tiempo Respuesta Promedio</MudText>
-                            <MudText Typo="Typo.h6">@tiempoPromedioRespuesta</MudText>
-                        </MudStack>
-                    </MudStack>
+                    <MudList Dense="true" Class="overflow-auto" Style="max-height: 270px;">
+                        @foreach (var inc in incidentesRecientes.Take(5))
+                        {
+                            <MudListItem Style="border-bottom: 1px solid #eee; padding: 8px 0;">
+                                <MudStack Spacing="1">
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                        <MudText Typo="Typo.body2" Style="font-weight: 500;">@inc.Titulo</MudText>
+                                        <MudChip Size="MudSize.Small" Color="@GetPrioridadColor(inc.Prioridad)">@inc.Prioridad</MudChip>
+                                    </MudStack>
+                                    <MudText Typo="Typo.caption" Class="text-muted">
+                                        @inc.FechaCreacion.ToString("dd/MM/yyyy HH:mm") - @inc.Estado
+                                    </MudText>
+                                </MudStack>
+                            </MudListItem>
+                        }
+                    </MudList>
                 </MudPaper>
             </MudItem>
         </MudGrid>
@@ -371,6 +369,7 @@
     private List<PrioridadData> prioridadData = new();
     private List<EstadoData> estadoData = new();
     private List<LaboratorioData> topLaboratorios = new();
+    private List<IncidenteDto> incidentesRecientes = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -500,6 +499,20 @@
             {
                 tasaResolucion = (int)((incidentesResueltos / (double)totalIncidentes) * 100);
             }
+
+            // Incidentes recientes (convertir a DTOs)
+            incidentesRecientes = incidentes
+                .OrderByDescending(i => i.FechaCreacion)
+                .Take(5)
+                .Select(i => new IncidenteDto
+                {
+                    IncidenteID = i.IncidenteID,
+                    Titulo = i.Titulo,
+                    Prioridad = i.Prioridad,
+                    Estado = i.Estado,
+                    FechaCreacion = i.FechaCreacion
+                })
+                .ToList();
         }
         catch (Exception ex)
         {
@@ -581,6 +594,18 @@
     private void VerBaseConocimientos()
     {
         Navigation.NavigateTo("/administrativo/conocimientos");
+    }
+
+    private MudColor GetPrioridadColor(string prioridad)
+    {
+        return prioridad switch
+        {
+            "Crítica" => MudColor.Error,
+            "Alta" => MudColor.Warning,
+            "Media" => MudColor.Info,
+            "Baja" => MudColor.Default,
+            _ => MudColor.Default
+        };
     }
 
     // Clases para datos de gráficos

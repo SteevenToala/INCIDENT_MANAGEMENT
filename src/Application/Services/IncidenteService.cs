@@ -157,6 +157,7 @@ public class IncidenteService : IIncidenteService
             ComputadoraNombre = incidente.Computadora?.CodigoEquipo ?? "",
             LaboratorioNombre = incidente.Laboratorio?.Nombre ?? "",
             UsuarioReportador = incidente.UsuarioReportador?.NombreCompleto ?? "",
+            UsuarioReportadorID = incidente.UsuarioReportadorID,
             EstudianteNombre = incidente.UsuarioReportador?.NombreCompleto ?? "",
             RolReportador = incidente.UsuarioReportador?.Rol?.Nombre ?? "",
             EstadoAsignacion = incidente.Asignaciones.FirstOrDefault(a => a.FechaCompletacion == null)?.EstadoAsignacion
@@ -186,6 +187,7 @@ public class IncidenteService : IIncidenteService
             ComputadoraNombre = incidente.Computadora?.CodigoEquipo ?? "",
             LaboratorioNombre = incidente.Laboratorio?.Nombre ?? "",
             UsuarioReportador = incidente.UsuarioReportador?.NombreCompleto ?? "",
+            UsuarioReportadorID = incidente.UsuarioReportadorID,
             EstudianteNombre = incidente.UsuarioReportador?.NombreCompleto ?? "",
             RolReportador = incidente.UsuarioReportador?.Rol?.Nombre ?? "",
             EstadoAsignacion = asignacionTecnico?.EstadoAsignacion

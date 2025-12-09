@@ -9,6 +9,7 @@
 @inject IAsignacionService AsignacionService
 @inject IBaseConocimientoService BaseConocimientoService
 @inject IUsuarioRepository UsuarioRepository
+@inject INotificacionService NotificacionService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
@@ -672,6 +673,21 @@
             };
 
             await AsignacionService.AsignarIncidenteAsync(createDto);
+            
+            // Notificar al estudiante
+            if (incidente.UsuarioReportadorID.HasValue)
+            {
+                var tecnico = await UsuarioRepository.GetByIdAsync(int.Parse(asignacionForm.TecnicoSeleccionadoId));
+                await NotificacionService.CrearNotificacionAsync(
+                    incidente.UsuarioReportadorID.Value,
+                    incidente.IncidenteID,
+                    "Incidente Asignado",
+                    $"Tu incidente '{incidente.CodigoIncidente}' ha sido asignado al técnico {tecnico?.NombreCompleto}. Pronto comenzará a trabajar en él.",
+                    "Asignacion",
+                    $"/estudiante/incidencias/detalle?id={incidente.IncidenteID}"
+                );
+            }
+            
             Snackbar.Add("Incidente asignado exitosamente", Severity.Success);
             await CargarIncidencia();
             
@@ -697,6 +713,21 @@
         try
         {
             await AsignacionService.AceptarAsignacionAsync(asignacionActual.AsignacionID, userId.Value);
+            
+            // Notificar al estudiante
+            if (incidente.UsuarioReportadorID.HasValue)
+            {
+                var tecnico = await UsuarioRepository.GetByIdAsync(userId.Value);
+                await NotificacionService.CrearNotificacionAsync(
+                    incidente.UsuarioReportadorID.Value,
+                    incidente.IncidenteID,
+                    "Trabajo Iniciado",
+                    $"El técnico {tecnico?.NombreCompleto} ha comenzado a trabajar en tu incidente '{incidente.CodigoIncidente}'.",
+                    "Progreso",
+                    $"/estudiante/incidencias/detalle?id={incidente.IncidenteID}"
+                );
+            }
+            
             Snackbar.Add("Asignación aceptada. Ahora puedes trabajar en el incidente.", Severity.Success);
             await CargarIncidencia();
         }
@@ -741,6 +772,20 @@
         {
             // Marcar la asignación como completada
             await AsignacionService.CompletarAsignacionAsync(asignacionActual.AsignacionID, "Trabajo completado");
+            
+            // Notificar al estudiante
+            if (incidente.UsuarioReportadorID.HasValue)
+            {
+                await NotificacionService.CrearNotificacionAsync(
+                    incidente.UsuarioReportadorID.Value,
+                    incidente.IncidenteID,
+                    "Trabajo Completado",
+                    $"El trabajo técnico en tu incidente '{incidente.CodigoIncidente}' ha sido completado. El técnico está registrando la solución.",
+                    "Progreso",
+                    $"/estudiante/incidencias/detalle?id={incidente.IncidenteID}"
+                );
+            }
+            
             Snackbar.Add("Trabajo marcado como completado. Ahora puedes registrar la solución.", Severity.Success);
             await CargarIncidencia();
         }
@@ -788,6 +833,19 @@
             };
             await BaseConocimientoService.CreateAsync(conocimientoDto, userId.Value);
 
+            // Notificar al estudiante que su incidente fue resuelto
+            if (incidente.UsuarioReportadorID.HasValue)
+            {
+                await NotificacionService.CrearNotificacionAsync(
+                    incidente.UsuarioReportadorID.Value,
+                    incidente.IncidenteID,
+                    "✅ Incidente Resuelto",
+                    $"¡Buenas noticias! Tu incidente '{incidente.CodigoIncidente}' ha sido resuelto. Solución: {formModel.TituloSolucion}",
+                    "Resuelto",
+                    $"/estudiante/incidencias/detalle?id={incidente.IncidenteID}"
+                );
+            }
+
             Snackbar.Add("Incidente resuelto y solución guardada en la base de conocimientos", Severity.Success);
             await CargarIncidencia();
         }
@@ -816,6 +874,19 @@
                 Comentarios = "Incidente cerrado"
             };
             await IncidenteService.ActualizarEstadoAsync(updateDto);
+
+            // Notificar al estudiante que el incidente está cerrado
+            if (incidente.UsuarioReportadorID.HasValue)
+            {
+                await NotificacionService.CrearNotificacionAsync(
+                    incidente.UsuarioReportadorID.Value,
+                    incidente.IncidenteID,
+                    "🔒 Incidente Cerrado",
+                    $"Tu incidente '{incidente.CodigoIncidente}' ha sido cerrado. El caso está completamente finalizado.",
+                    "Cerrado",
+                    $"/estudiante/incidencias/detalle?id={incidente.IncidenteID}"
+                );
+            }
 
             Snackbar.Add("Incidente cerrado exitosamente", Severity.Success);
             await CargarIncidencia();
@@ -982,6 +1053,20 @@
                 Notas = $"Reasignado desde técnico anterior. Motivo: {reasignacionForm.Motivo}"
             };
             await AsignacionService.AsignarIncidenteAsync(nuevaAsignacion);
+
+            // Notificar al estudiante sobre la reasignación
+            if (incidente.UsuarioReportadorID.HasValue)
+            {
+                var nuevoTecnico = await UsuarioRepository.GetByIdAsync(int.Parse(reasignacionForm.TecnicoSeleccionadoId));
+                await NotificacionService.CrearNotificacionAsync(
+                    incidente.UsuarioReportadorID.Value,
+                    incidente.IncidenteID,
+                    "Incidente Reasignado",
+                    $"Tu incidente '{incidente.CodigoIncidente}' ha sido reasignado a {nuevoTecnico?.NombreCompleto} para continuar con su resolución.",
+                    "Reasignacion",
+                    $"/estudiante/incidencias/detalle?id={incidente.IncidenteID}"
+                );
+            }
 
             Snackbar.Add("Incidente reasignado exitosamente", Severity.Success);
             
