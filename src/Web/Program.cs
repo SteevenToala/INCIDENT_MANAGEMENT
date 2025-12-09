@@ -12,8 +12,86 @@ using IncidentManagement.Infrastructure.Repositories;
 using Web.Components;
 using Web.Configuration;
 using Web.Services;
+using DotNetEnv;
+
+// Cargar variables de entorno desde .env
+// Buscar el archivo .env en la raíz del repositorio
+var currentDir = Directory.GetCurrentDirectory();
+var envPath = Path.Combine(currentDir, "..", "..", ".env");
+
+// Si no existe, intentar desde la raíz del proyecto
+if (!File.Exists(envPath))
+{
+    envPath = Path.Combine(currentDir, ".env");
+}
+
+// Si aún no existe, buscar hacia arriba en el árbol de directorios
+if (!File.Exists(envPath))
+{
+    var searchDir = new DirectoryInfo(currentDir);
+    while (searchDir != null && !File.Exists(Path.Combine(searchDir.FullName, ".env")))
+    {
+        searchDir = searchDir.Parent;
+    }
+    
+    if (searchDir != null)
+    {
+        envPath = Path.Combine(searchDir.FullName, ".env");
+    }
+}
+
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+    Console.WriteLine($"[Config] ✓ Archivo .env cargado desde: {envPath}");
+}
+else
+{
+    Console.WriteLine($"[Config] ⚠ No se encontró archivo .env. Usando valores de appsettings.json");
+    Console.WriteLine($"[Config]   Directorio actual: {currentDir}");
+}
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Sobrescribir configuración con variables de entorno
+var dbServer = Environment.GetEnvironmentVariable("DB_SERVER");
+var dbName = Environment.GetEnvironmentVariable("DB_NAME");
+var dbTrustedConnection = Environment.GetEnvironmentVariable("DB_TRUSTED_CONNECTION");
+
+if (!string.IsNullOrEmpty(dbServer) && !string.IsNullOrEmpty(dbName))
+{
+    var connectionString = $"Server={dbServer};Database={dbName};Trusted_Connection={dbTrustedConnection ?? "True"};TrustServerCertificate=True;MultipleActiveResultSets=true";
+    builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
+    Console.WriteLine($"[Config] Connection String configurado desde .env");
+}
+
+// Configurar JWT desde variables de entorno
+var jwtSecretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
+var jwtExpiration = Environment.GetEnvironmentVariable("JWT_EXPIRATION_MINUTES");
+
+if (!string.IsNullOrEmpty(jwtSecretKey))
+{
+    builder.Configuration["Jwt:SecretKey"] = jwtSecretKey;
+    builder.Configuration["Jwt:Issuer"] = jwtIssuer ?? "IncidentManagement";
+    builder.Configuration["Jwt:Audience"] = jwtAudience ?? "IncidentManagementUsers";
+    builder.Configuration["Jwt:ExpirationMinutes"] = jwtExpiration ?? "10080";
+    Console.WriteLine($"[Config] JWT configurado desde .env");
+}
+
+// Configurar Push Notifications desde variables de entorno
+var vapidPublicKey = Environment.GetEnvironmentVariable("PUSH_VAPID_PUBLIC_KEY");
+var vapidPrivateKey = Environment.GetEnvironmentVariable("PUSH_VAPID_PRIVATE_KEY");
+var vapidSubject = Environment.GetEnvironmentVariable("PUSH_VAPID_SUBJECT");
+
+if (!string.IsNullOrEmpty(vapidPublicKey))
+{
+    builder.Configuration["PushNotifications:VapidPublicKey"] = vapidPublicKey;
+    builder.Configuration["PushNotifications:VapidPrivateKey"] = vapidPrivateKey ?? "";
+    builder.Configuration["PushNotifications:VapidSubject"] = vapidSubject ?? "mailto:admin@incidentmanagement.com";
+    Console.WriteLine($"[Config] Push Notifications configurado desde .env");
+}
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
