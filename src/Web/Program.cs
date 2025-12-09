@@ -117,6 +117,7 @@ builder.Services.AddScoped<IFacultadRepository, FacultadRepository>();
 builder.Services.AddScoped<ILaboratorioRepository, LaboratorioRepository>();
 builder.Services.AddScoped<IComputadoraRepository, ComputadoraRepository>();
 builder.Services.AddScoped<IAsignacionRepository, AsignacionRepository>();
+builder.Services.AddScoped<ICatalogoServicioRepository, CatalogoServicioRepository>();
 
 // Add Application Services
 builder.Services.AddScoped<IIncidenteService, IncidenteService>();

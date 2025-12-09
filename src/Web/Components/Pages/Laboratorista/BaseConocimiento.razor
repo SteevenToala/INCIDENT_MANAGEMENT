@@ -4,28 +4,39 @@
 @using MudBlazor
 @using IncidentManagement.Application.Interfaces
 @using IncidentManagement.Application.DTOs
+@using IncidentManagement.Domain.Entities
 @inject IBaseConocimientoService BaseConocimientoService
+@inject ICatalogoServicioRepository CatalogoServicioRepository
 @inject NavigationManager Navigation
 
 <PageTitle>Base de Conocimiento</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-4">Base de Conocimiento</MudText>
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h3" Class="mb-2">
+        <MudIcon Icon="@Icons.Material.Filled.MenuBook" Size="Size.Large" Class="me-2" />
+        Base de Conocimiento
+    </MudText>
+    <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-4">
+        Encuentra soluciones a problemas comunes y aprende de casos anteriores
+    </MudText>
 
+    <!-- Barra de Búsqueda -->
     <MudPaper Elevation="2" Class="pa-4 mb-4">
         <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
             <MudTextField @bind-Value="searchQuery"
-                          Label="Buscar solución"
+                          Label="Buscar en título, problema o solución..."
                           Variant="Variant.Outlined"
-                          Adornment="Adornment.End"
+                          Adornment="Adornment.Start"
                           AdornmentIcon="@Icons.Material.Filled.Search"
                           OnKeyUp="@(async (KeyboardEventArgs e) => { if (e.Key == "Enter") await Buscar(); })"
-                          FullWidth="true" />
+                          FullWidth="true"
+                          Immediate="true" />
             
             <MudButton Variant="Variant.Filled" 
                        Color="Color.Primary" 
                        OnClick="Buscar"
-                       Disabled="isSearching">
+                       Disabled="isSearching"
+                       Size="Size.Large">
                 @if (isSearching)
                 {
                     <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
@@ -39,6 +50,72 @@
         </MudStack>
     </MudPaper>
 
+    <!-- Panel de Filtros Horizontal -->
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6" md="3">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Categoría</MudText>
+                <select @bind="categoriaSeleccionada" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="">Todas las categorías</option>
+                    <option value="Hardware">Hardware</option>
+                    <option value="Software">Software</option>
+                    <option value="Red">Red</option>
+                    <option value="Sistema Operativo">Sistema Operativo</option>
+                    <option value="Periféricos">Periféricos</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Fecha de creación</MudText>
+                <select @bind="periodoSeleccionado" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="">Todas las fechas</option>
+                    <option value="hoy">Hoy</option>
+                    <option value="semana">Última semana</option>
+                    <option value="mes">Último mes</option>
+                    <option value="trimestre">Último trimestre</option>
+                    <option value="anio">Último año</option>
+                </select>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Ordenar por</MudText>
+                <select @bind="ordenarPor" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="fecha">Más reciente</option>
+                    <option value="titulo">Título A-Z</option>
+                </select>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3" Style="display: flex; align-items: flex-end; gap: 8px;">
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Primary" 
+                           OnClick="AplicarFiltros"
+                           StartIcon="@Icons.Material.Filled.Check"
+                           FullWidth="true">
+                    Aplicar
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" 
+                           Color="Color.Secondary" 
+                           OnClick="LimpiarFiltros"
+                           StartIcon="@Icons.Material.Filled.Clear"
+                           FullWidth="true">
+                    Limpiar
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Estadísticas -->
+        <MudDivider Class="my-3" />
+        <MudStack Row="true" Spacing="4" Justify="Justify.Center">
+            <MudChip Icon="@Icons.Material.Filled.Article" Color="Color.Info">
+                Total de soluciones: @totalArticulos
+            </MudChip>
+            <MudChip Icon="@Icons.Material.Filled.FilterList" Color="Color.Success">
+                Resultados: @resultadosFiltrados.Count
+            </MudChip>
+        </MudStack>
+    </MudPaper>
+
     @if (isSearching)
     {
         <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
@@ -47,60 +124,269 @@
     {
         <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
     }
-    else if (resultados.Any())
+    else if (resultadosFiltrados.Any())
     {
-        <MudText Typo="Typo.subtitle1" Class="mb-3">@resultados.Count resultado(s) encontrado(s)</MudText>
+        <!-- Header de resultados -->
+        <MudPaper Elevation="0" Class="pa-3 mb-3" Style="background-color: var(--mud-palette-background-grey);">
+            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.subtitle1">
+                    <MudIcon Icon="@Icons.Material.Filled.Article" Size="Size.Small" Class="me-2" />
+                    <strong>@resultadosFiltrados.Count</strong> resultado(s) encontrado(s)
+                </MudText>
+                <MudChip Size="Size.Small" Icon="@Icons.Material.Filled.Info" Color="Color.Info">
+                    @if (!string.IsNullOrEmpty(categoriaSeleccionada))
+                    {
+                        <text>Categoría: @categoriaSeleccionada</text>
+                    }
+                    else
+                    {
+                        <text>Todas las categorías</text>
+                    }
+                </MudChip>
+            </MudStack>
+        </MudPaper>
         
-        <MudStack Spacing="3">
-            @foreach (var item in resultados)
+        <!-- Grid de resultados -->
+        <MudGrid Spacing="3">
+            @foreach (var item in resultadosFiltrados)
             {
-                <MudCard Elevation="2">
-                    <MudCardHeader>
-                        <CardHeaderContent>
-                            <MudText Typo="Typo.h6">@item.Titulo</MudText>
-                        </CardHeaderContent>
-                        <CardHeaderActions>
-                            <MudChip Size="Size.Small" Color="Color.Info">@item.Categoria</MudChip>
-                        </CardHeaderActions>
-                    </MudCardHeader>
-                    <MudCardContent>
-                        <MudText Typo="Typo.body2" Class="mb-2">
-                            <strong>Problema:</strong> @item.Problema
-                        </MudText>
-                        <MudDivider Class="my-2" />
-                        <MudText Typo="Typo.body2">
-                            <strong>Solución:</strong> @item.Solucion
-                        </MudText>
-                    </MudCardContent>
-                    <MudCardActions>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            Creado: @item.FechaCreacion.ToString("dd/MM/yyyy") | Efectividad: @item.Efectividad%
-                        </MudText>
-                    </MudCardActions>
-                </MudCard>
+                <MudItem xs="12">
+                    <MudCard Elevation="3" Style="height: 100%; display: flex; flex-direction: column;">
+                        <MudCardHeader Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6" Style="color: white; font-weight: 600;">
+                                    @item.Titulo
+                                </MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        
+                        <MudCardContent Style="flex: 1;">
+                            <MudStack Spacing="2">
+                                <!-- Categoría y Tiempo de Resolución -->
+                                <MudStack Row="true" Spacing="2">
+                                    <MudChip Size="Size.Small" 
+                                             Icon="@Icons.Material.Filled.Category" 
+                                             Color="Color.Primary">
+                                        @item.Categoria
+                                    </MudChip>
+                                    @if (item.TiempoResolucion.HasValue && item.TiempoResolucion > 0)
+                                    {
+                                        <MudChip Size="Size.Small" 
+                                                 Icon="@Icons.Material.Filled.AccessTime" 
+                                                 Color="Color.Info">
+                                            @FormatearTiempo(item.TiempoResolucion.Value)
+                                        </MudChip>
+                                    }
+                                </MudStack>
+                                
+                                <!-- Problema -->
+                                <div>
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Error" Class="mb-1">
+                                        <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" Class="me-1" />
+                                        Problema:
+                                    </MudText>
+                                    <MudText Typo="Typo.body2" Class="text-truncate-3" Style="line-height: 1.5;">
+                                        @item.Problema
+                                    </MudText>
+                                </div>
+                                
+                                <MudDivider />
+                                
+                                <!-- Solución -->
+                                <div>
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Success" Class="mb-1">
+                                        <MudIcon Icon="@Icons.Material.Filled.Lightbulb" Size="Size.Small" Class="me-1" />
+                                        Solución:
+                                    </MudText>
+                                    <MudText Typo="Typo.body2" Class="text-truncate-3" Style="line-height: 1.5;">
+                                        @item.Solucion
+                                    </MudText>
+                                </div>
+                            </MudStack>
+                        </MudCardContent>
+                        
+                        <MudCardActions Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Style="width: 100%;">
+                                <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Secondary" />
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @item.FechaCreacion.ToString("dd/MM/yyyy")
+                                </MudText>
+                                <MudSpacer />
+                                <MudButton Size="Size.Small" 
+                                           Variant="Variant.Text" 
+                                           Color="Color.Primary"
+                                           OnClick="@(() => VerDetalle(item))">
+                                    Ver más
+                                </MudButton>
+                            </MudStack>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
             }
-        </MudStack>
+        </MudGrid>
     }
     else if (hasSearched)
     {
-        <MudAlert Severity="Severity.Info">
-            No se encontraron resultados para tu búsqueda.
-        </MudAlert>
+        <MudPaper Class="pa-8" Style="text-align: center;">
+            <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Secondary" />
+            <MudText Typo="Typo.h6" Class="mt-3" Color="Color.Secondary">
+                No se encontraron resultados
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Intenta ajustar los filtros o realizar una búsqueda diferente
+            </MudText>
+        </MudPaper>
     }
     else
     {
-        <MudAlert Severity="Severity.Info">
-            Utiliza el buscador para encontrar soluciones en la base de conocimiento.
-        </MudAlert>
+        <MudPaper Class="pa-8" Style="text-align: center; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+            <MudIcon Icon="@Icons.Material.Filled.MenuBook" Size="Size.Large" Color="Color.Primary" />
+            <MudText Typo="Typo.h5" Class="mt-3">
+                Bienvenido a la Base de Conocimiento
+            </MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mt-2">
+                Utiliza los filtros y el buscador para encontrar soluciones a problemas técnicos
+            </MudText>
+        </MudPaper>
     }
 </MudContainer>
+
+<!-- Dialog para ver detalle completo -->
+<MudDialog @bind-IsVisible="dialogVisible" Options="dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Article" Class="me-2" />
+            @articuloSeleccionado?.Titulo
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (articuloSeleccionado != null)
+        {
+            <MudStack Spacing="3">
+                <MudStack Row="true" Spacing="2">
+                    <MudChip Icon="@Icons.Material.Filled.Category" Color="Color.Primary">
+                        @articuloSeleccionado.Categoria
+                    </MudChip>
+                    @if (articuloSeleccionado.TiempoResolucion.HasValue && articuloSeleccionado.TiempoResolucion > 0)
+                    {
+                        <MudChip Icon="@Icons.Material.Filled.AccessTime" Color="Color.Info">
+                            Resuelto en: @FormatearTiempo(articuloSeleccionado.TiempoResolucion.Value)
+                        </MudChip>
+                    }
+                </MudStack>
+                
+                <MudDivider />
+                
+                <div>
+                    <MudText Typo="Typo.h6" Color="Color.Error" Class="mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Warning" Class="me-2" />
+                        Problema
+                    </MudText>
+                    <MudPaper Elevation="0" Class="pa-3" Style="background-color: #ffebee;">
+                        <MudText Typo="Typo.body1">@articuloSeleccionado.Problema</MudText>
+                    </MudPaper>
+                </div>
+                
+                <div>
+                    <MudText Typo="Typo.h6" Color="Color.Success" Class="mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Lightbulb" Class="me-2" />
+                        Solución
+                    </MudText>
+                    <MudPaper Elevation="0" Class="pa-3" Style="background-color: #e8f5e9;">
+                        <MudText Typo="Typo.body1" Style="white-space: pre-line;">@articuloSeleccionado.Solucion</MudText>
+                    </MudPaper>
+                </div>
+                
+                <MudDivider />
+                
+                <MudStack Row="true" Spacing="3">
+                    <MudChip Icon="@Icons.Material.Filled.CalendarToday" Color="Color.Info">
+                        Creado: @articuloSeleccionado.FechaCreacion.ToString("dd/MM/yyyy")
+                    </MudChip>
+                </MudStack>
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="CerrarDialog">
+            Cerrar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .text-truncate-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>
 
 @code {
     private string searchQuery = string.Empty;
     private List<BaseConocimientoDto> resultados = new();
+    private List<BaseConocimientoDto> resultadosFiltrados = new();
     private bool isSearching;
     private bool hasSearched;
     private string? errorMessage;
+    
+    // Filtros
+    private string categoriaSeleccionada = "";
+    private string periodoSeleccionado = "";
+    private string ordenarPor = "fecha";
+    private int totalArticulos = 0;
+    
+    // Servicios
+    private List<CatalogoServicio> servicios = new();
+    
+    // Dialog
+    private bool dialogVisible = false;
+    private BaseConocimientoDto? articuloSeleccionado = null;
+    private DialogOptions dialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarServicios();
+        await CargarDatosIniciales();
+    }
+
+    private async Task CargarServicios()
+    {
+        try
+        {
+            servicios = (await CatalogoServicioRepository.GetAllAsync()).ToList();
+            Console.WriteLine($"[BaseConocimiento] Servicios cargados: {servicios.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[BaseConocimiento] Error cargando servicios: {ex.Message}");
+        }
+    }
+
+    private async Task CargarDatosIniciales()
+    {
+        isSearching = true;
+        errorMessage = null;
+
+        try
+        {
+            resultados = await CargarTodos();
+            totalArticulos = resultados.Count;
+            AplicarFiltros();
+            hasSearched = true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Error al cargar la base de conocimiento.";
+            Console.WriteLine($"[BaseConocimiento] Error al cargar datos iniciales: {ex.Message}");
+        }
+        finally
+        {
+            isSearching = false;
+        }
+    }
 
     private async Task Buscar()
     {
@@ -108,6 +394,7 @@
         {
             resultados = await CargarTodos();
             hasSearched = true;
+            AplicarFiltros();
             return;
         }
 
@@ -118,6 +405,7 @@
         try
         {
             resultados = (await BaseConocimientoService.SearchAsync(searchQuery)).ToList();
+            AplicarFiltros();
         }
         catch (Exception ex)
         {
@@ -130,6 +418,69 @@
         }
     }
 
+    private void AplicarFiltros()
+    {
+        resultadosFiltrados = resultados.ToList();
+        
+        // Filtrar por categoría
+        if (!string.IsNullOrEmpty(categoriaSeleccionada))
+        {
+            resultadosFiltrados = resultadosFiltrados
+                .Where(r => !string.IsNullOrEmpty(r.Categoria) && r.Categoria.Equals(categoriaSeleccionada, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        
+        // Filtrar por periodo de fechas
+        if (!string.IsNullOrEmpty(periodoSeleccionado))
+        {
+            var fechaLimite = periodoSeleccionado switch
+            {
+                "hoy" => DateTime.Today,
+                "semana" => DateTime.Today.AddDays(-7),
+                "mes" => DateTime.Today.AddMonths(-1),
+                "trimestre" => DateTime.Today.AddMonths(-3),
+                "anio" => DateTime.Today.AddYears(-1),
+                _ => DateTime.MinValue
+            };
+            
+            if (fechaLimite != DateTime.MinValue)
+            {
+                resultadosFiltrados = resultadosFiltrados
+                    .Where(r => r.FechaCreacion >= fechaLimite)
+                    .ToList();
+            }
+        }
+        
+        // Ordenar
+        resultadosFiltrados = ordenarPor switch
+        {
+            "fecha" => resultadosFiltrados.OrderByDescending(r => r.FechaCreacion).ToList(),
+            "titulo" => resultadosFiltrados.OrderBy(r => r.Titulo).ToList(),
+            _ => resultadosFiltrados.OrderByDescending(r => r.FechaCreacion).ToList()
+        };
+    }
+
+    private void LimpiarFiltros()
+    {
+        categoriaSeleccionada = "";
+        periodoSeleccionado = "";
+        ordenarPor = "fecha";
+        searchQuery = "";
+        AplicarFiltros();
+    }
+
+    private void VerDetalle(BaseConocimientoDto articulo)
+    {
+        articuloSeleccionado = articulo;
+        dialogVisible = true;
+    }
+
+    private void CerrarDialog()
+    {
+        dialogVisible = false;
+        articuloSeleccionado = null;
+    }
+
     private async Task<List<BaseConocimientoDto>> CargarTodos()
     {
         try
@@ -139,6 +490,26 @@
         catch
         {
             return new List<BaseConocimientoDto>();
+        }
+    }
+
+    private string FormatearTiempo(int minutos)
+    {
+        if (minutos < 60)
+        {
+            return $"{minutos} min";
+        }
+        else if (minutos < 1440) // menos de 24 horas
+        {
+            var horas = minutos / 60;
+            var mins = minutos % 60;
+            return mins > 0 ? $"{horas}h {mins}min" : $"{horas}h";
+        }
+        else
+        {
+            var dias = minutos / 1440;
+            var horasRestantes = (minutos % 1440) / 60;
+            return horasRestantes > 0 ? $"{dias}d {horasRestantes}h" : $"{dias}d";
         }
     }
 }
