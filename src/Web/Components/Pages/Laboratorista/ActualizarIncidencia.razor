@@ -185,7 +185,7 @@
                     }
                     else if (asignacionActual != null && asignacionActual.EstadoAsignacion == "Aceptado" && incidente.Estado != "Cerrado")
                     {
-                        <!-- Paso 3: Trabajando - Botón para completar trabajo -->
+                        <!-- Paso 3: Trabajando - Botón para completar trabajo o reasignar -->
                         <MudText Typo="Typo.h6" Class="mb-3">
                             <MudIcon Icon="@Icons.Material.Filled.Engineering" Class="me-2" />
                             Trabajando en el Incidente
@@ -193,76 +193,152 @@
                         <MudText Class="mb-3">
                             Cuando hayas terminado de trabajar en el incidente, marca el trabajo como completado.
                         </MudText>
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
-                                   OnClick="CompletarTrabajo" Disabled="isSubmitting">
-                            <MudIcon Icon="@Icons.Material.Filled.Assignment" Class="me-2" />
-                            Completar Trabajo
-                        </MudButton>
+                        <MudStack Direction="Row" Spacing="2">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                                       OnClick="CompletarTrabajo" Disabled="isSubmitting">
+                                <MudIcon Icon="@Icons.Material.Filled.Assignment" Class="me-2" />
+                                Completar Trabajo
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Warning" Size="Size.Large"
+                                       OnClick="() => mostrarReasignacion = true" Disabled="isSubmitting">
+                                <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Class="me-2" />
+                                Reasignar a Otro Técnico
+                            </MudButton>
+                        </MudStack>
+
+                        @if (mostrarReasignacion)
+                        {
+                            <MudPaper Elevation="1" Class="pa-4 mt-4" Style="background-color: #fff3cd;">
+                                <MudText Typo="Typo.h6" Class="mb-3">
+                                    <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Class="me-2" />
+                                    Reasignar Incidente
+                                </MudText>
+                                <MudText Class="mb-3">
+                                    Si no puedes resolver este incidente, puedes reasignarlo a otro técnico.
+                                </MudText>
+
+                                <MudStack Spacing="3">
+                                    <div>
+                                        <label for="tecnico-reasignar-select"><strong>Seleccionar Nuevo Técnico</strong></label>
+                                        <select id="tecnico-reasignar-select" class="form-control" @bind="reasignacionForm.TecnicoSeleccionadoId" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">
+                                            <option value="">-- Seleccionar Laboratorista --</option>
+                                            @foreach (var tecnico in tecnicos.Where(t => t.UsuarioID.ToString() != userId.ToString()))
+                                            {
+                                                <option value="@tecnico.UsuarioID">@tecnico.NombreCompleto</option>
+                                            }
+                                        </select>
+                                    </div>
+
+                                    <MudTextField @bind-Value="reasignacionForm.Motivo"
+                                                  Label="Motivo de la Reasignación"
+                                                  Variant="Variant.Outlined"
+                                                  Lines="3"
+                                                  Required="true"
+                                                  Placeholder="Explica por qué necesitas reasignar este incidente..." />
+
+                                    <MudStack Direction="Row" Spacing="2">
+                                        <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Medium"
+                                                   OnClick="ReasignarIncidente" 
+                                                   Disabled="isSubmitting || string.IsNullOrEmpty(reasignacionForm.TecnicoSeleccionadoId) || string.IsNullOrEmpty(reasignacionForm.Motivo)">
+                                            @if (isSubmitting)
+                                            {
+                                                <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                                                <span>Reasignando...</span>
+                                            }
+                                            else
+                                            {
+                                                <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Class="me-2" />
+                                                <span>Confirmar Reasignación</span>
+                                            }
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Medium"
+                                                   OnClick="() => mostrarReasignacion = false" Disabled="isSubmitting">
+                                            Cancelar
+                                        </MudButton>
+                                    </MudStack>
+                                </MudStack>
+                            </MudPaper>
+                        }
                     }
                     else if (asignacionActual != null && asignacionActual.EstadoAsignacion == "Completado" && incidente.Estado != "Resuelto" && incidente.Estado != "Cerrado")
                     {
-                        <!-- Paso 4: Trabajo Completado - Registrar solución -->
-                        <MudText Typo="Typo.h6" Class="mb-3">
-                            <MudIcon Icon="@Icons.Material.Filled.Construction" Class="me-2" />
-                            Registrar Solución
-                        </MudText>
-                        <MudText Class="mb-3">
-                            Describe la solución aplicada. Esta información se guardará en la base de conocimientos.
-                        </MudText>
-                        
-                        <EditForm Model="@formModel" OnValidSubmit="ResolverIncidente">
-                            <MudStack Spacing="3">
-                                <MudTextField @bind-Value="formModel.TituloSolucion"
-                                              Label="Título de la Solución"
-                                              Variant="Variant.Outlined"
-                                              Required="true"
-                                              Placeholder="Ej: Reinstalación de drivers de red" />
+                        @if (asignacionActual.Notas != null && asignacionActual.Notas.Contains("Reasignado a otro técnico"))
+                        {
+                            <!-- Si fue reasignado, mostrar mensaje informativo -->
+                            <MudAlert Severity="Severity.Info">
+                                <strong>Incidente Reasignado</strong>
+                                <div>Este incidente fue reasignado a otro técnico. Ya no puedes realizar acciones sobre él.</div>
+                                @if (!string.IsNullOrEmpty(asignacionActual.Notas))
+                                {
+                                    <div class="mt-2"><em>@asignacionActual.Notas</em></div>
+                                }
+                            </MudAlert>
+                        }
+                        else
+                        {
+                            <!-- Paso 4: Trabajo Completado - Registrar solución -->
+                            <MudText Typo="Typo.h6" Class="mb-3">
+                                <MudIcon Icon="@Icons.Material.Filled.Construction" Class="me-2" />
+                                Registrar Solución
+                            </MudText>
+                            <MudText Class="mb-3">
+                                Describe la solución aplicada. Esta información se guardará en la base de conocimientos.
+                            </MudText>
+                            
+                            <EditForm Model="@formModel" OnValidSubmit="ResolverIncidente">
+                                <MudStack Spacing="3">
+                                    <MudTextField @bind-Value="formModel.TituloSolucion"
+                                                  Label="Título de la Solución"
+                                                  Variant="Variant.Outlined"
+                                                  Required="true"
+                                                  Placeholder="Ej: Reinstalación de drivers de red" />
 
-                                <MudTextField @bind-Value="formModel.DescripcionSolucion"
-                                              Label="Descripción Detallada de la Solución"
-                                              Variant="Variant.Outlined"
-                                              Lines="6"
-                                              Required="true"
-                                              Placeholder="Describe paso a paso cómo se resolvió el problema..." />
+                                    <MudTextField @bind-Value="formModel.DescripcionSolucion"
+                                                  Label="Descripción Detallada de la Solución"
+                                                  Variant="Variant.Outlined"
+                                                  Lines="6"
+                                                  Required="true"
+                                                  Placeholder="Describe paso a paso cómo se resolvió el problema..." />
 
-                                <div>
-                                    <label for="categoria-select"><strong>Categoría</strong></label>
-                                    <select id="categoria-select" class="form-control" @bind="formModel.Categoria" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">
-                                        <option value="">-- Seleccionar --</option>
-                                        <option value="Hardware">Hardware</option>
-                                        <option value="Software">Software</option>
-                                        <option value="Red">Red</option>
-                                        <option value="Sistema Operativo">Sistema Operativo</option>
-                                        <option value="Periféricos">Periféricos</option>
-                                        <option value="Otro">Otro</option>
-                                    </select>
-                                </div>
+                                    <div>
+                                        <label for="categoria-select"><strong>Categoría</strong></label>
+                                        <select id="categoria-select" class="form-control" @bind="formModel.Categoria" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Hardware">Hardware</option>
+                                            <option value="Software">Software</option>
+                                            <option value="Red">Red</option>
+                                            <option value="Sistema Operativo">Sistema Operativo</option>
+                                            <option value="Periféricos">Periféricos</option>
+                                            <option value="Otro">Otro</option>
+                                        </select>
+                                    </div>
 
-                                <MudTextField @bind-Value="formModel.PalabrasClaveStr"
-                                              Label="Palabras Clave (separadas por comas)"
-                                              Variant="Variant.Outlined"
-                                              Placeholder="red, drivers, windows, configuración" />
+                                    <MudTextField @bind-Value="formModel.PalabrasClaveStr"
+                                                  Label="Palabras Clave (separadas por comas)"
+                                                  Variant="Variant.Outlined"
+                                                  Placeholder="red, drivers, windows, configuración" />
 
-                                <MudStack Direction="Row" Spacing="2">
-                                    <MudButton ButtonType="ButtonType.Submit" 
-                                               Variant="Variant.Filled" 
-                                               Color="Color.Success" 
-                                               Size="Size.Large"
-                                               Disabled="isSubmitting">
-                                        @if (isSubmitting)
-                                        {
-                                            <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
-                                            <span>Resolviendo...</span>
-                                        }
-                                        else
-                                        {
-                                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="me-2" />
-                                            <span>Marcar como Resuelto</span>
-                                        }
-                                    </MudButton>
+                                    <MudStack Direction="Row" Spacing="2">
+                                        <MudButton ButtonType="ButtonType.Submit" 
+                                                   Variant="Variant.Filled" 
+                                                   Color="Color.Success" 
+                                                   Size="Size.Large"
+                                                   Disabled="isSubmitting">
+                                            @if (isSubmitting)
+                                            {
+                                                <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                                                <span>Resolviendo...</span>
+                                            }
+                                            else
+                                            {
+                                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="me-2" />
+                                                <span>Marcar como Resuelto</span>
+                                            }
+                                        </MudButton>
+                                    </MudStack>
                                 </MudStack>
-                            </MudStack>
-                        </EditForm>
+                            </EditForm>
+                        }
                     }
                     else if (incidente.Estado == "Resuelto")
                     {
@@ -476,6 +552,8 @@
     private string? errorMessage;
     private int? userId;
     private bool esAsignador = false;
+    private bool mostrarReasignacion = false;
+    private ReasignacionFormModel reasignacionForm = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -503,11 +581,8 @@
 
         await CargarIncidencia();
         
-        // Cargar técnicos si es asignador
-        if (esAsignador)
-        {
-            await CargarTecnicos();
-        }
+        // Cargar técnicos (tanto para asignadores como para reasignación)
+        await CargarTecnicos();
     }
 
     private async Task CargarIncidencia()
@@ -537,14 +612,24 @@
                     .FirstOrDefault();
             }
             
-            // Obtener la primera asignación para el timeline
-            primeraAsignacion = todasAsignaciones.OrderBy(a => a.FechaAsignacion).FirstOrDefault();
+            // Obtener la asignación activa más reciente para el timeline (no completada por reasignación)
+            primeraAsignacion = todasAsignaciones
+                .Where(a => a.EstadoAsignacion != "Completado" || 
+                           (a.Notas == null || !a.Notas.Contains("Reasignado a otro técnico")))
+                .OrderByDescending(a => a.FechaAsignacion)
+                .FirstOrDefault();
+            
+            // Si no hay asignación activa, usar la primera
+            if (primeraAsignacion == null)
+            {
+                primeraAsignacion = todasAsignaciones.OrderBy(a => a.FechaAsignacion).FirstOrDefault();
+            }
             
             // Verificar si existe alguna asignación activa (no completada en todos los estados)
             tieneAsignacionActiva = todasAsignaciones.Any(a => 
                 a.EstadoAsignacion == "Pendiente" || 
                 a.EstadoAsignacion == "Aceptado" || 
-                a.EstadoAsignacion == "Completado"
+                (a.EstadoAsignacion == "Completado" && (a.Notas == null || !a.Notas.Contains("Reasignado a otro técnico")))
             );
         }
         catch (Exception ex)
@@ -865,5 +950,55 @@
         public string? TecnicoSeleccionadoId { get; set; }
         public string? TipoAsignacion { get; set; } = "Normal";
         public string? Notas { get; set; }
+    }
+
+    public class ReasignacionFormModel
+    {
+        public string? TecnicoSeleccionadoId { get; set; }
+        public string? Motivo { get; set; }
+    }
+
+    private async Task ReasignarIncidente()
+    {
+        if (incidente == null || userId == null || string.IsNullOrEmpty(reasignacionForm.TecnicoSeleccionadoId) || string.IsNullOrEmpty(reasignacionForm.Motivo))
+            return;
+
+        isSubmitting = true;
+        try
+        {
+            // Completar la asignación actual con el motivo de reasignación
+            if (asignacionActual != null)
+            {
+                var notasReasignacion = $"Reasignado a otro técnico. Motivo: {reasignacionForm.Motivo}";
+                await AsignacionService.CompletarAsignacionAsync(asignacionActual.AsignacionID, notasReasignacion);
+            }
+
+            // Crear nueva asignación para el otro técnico
+            var nuevaAsignacion = new CreateAsignacionDto
+            {
+                IncidenteID = incidente.IncidenteID,
+                UsuarioAsignadoID = int.Parse(reasignacionForm.TecnicoSeleccionadoId),
+                TipoAsignacion = "Reasignado",
+                Notas = $"Reasignado desde técnico anterior. Motivo: {reasignacionForm.Motivo}"
+            };
+            await AsignacionService.AsignarIncidenteAsync(nuevaAsignacion);
+
+            Snackbar.Add("Incidente reasignado exitosamente", Severity.Success);
+            
+            // Limpiar formulario
+            reasignacionForm = new ReasignacionFormModel();
+            mostrarReasignacion = false;
+            
+            await CargarIncidencia();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al reasignar incidente: {ex.Message}", Severity.Error);
+            Console.WriteLine($"[ActualizarIncidencia] Error: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
     }
 }
