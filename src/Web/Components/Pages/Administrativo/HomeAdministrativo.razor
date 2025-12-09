@@ -3,33 +3,83 @@
 @rendermode InteractiveServer
 @using System.Security.Claims
 @using IncidentManagement.Application.Interfaces
+@using IncidentManagement.Application.DTOs
+@using IncidentManagement.Domain.Entities
+@using ApexCharts
+@using MudColor = MudBlazor.Color
+@using MudSize = MudBlazor.Size
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject IIncidenteService IncidenteService
 @inject IUsuarioRepository UsuarioRepository
+@inject IIncidenteRepository IncidenteRepository
 
-<PageTitle>Panel Administrativo</PageTitle>
+<PageTitle>Dashboard Administrativo</PageTitle>
 
 <PushNotificationManager />
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-8">
-    <MudStack Spacing="1" Class="mb-6">
-        <MudText Typo="Typo.h3">
-            <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Class="me-2" />
-            Panel Administrativo - @userName
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudStack Spacing="2" Class="mb-4">
+        <MudText Typo="Typo.h4">
+            <MudIcon Icon="@Icons.Material.Filled.Dashboard" Class="me-2" />
+            Dashboard Administrativo
         </MudText>
-        <MudText Typo="Typo.subtitle2" Class="text-muted">Monitoreo y reportería de @facultadNombre</MudText>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudText Typo="Typo.subtitle1" Class="text-muted">@facultadNombre</MudText>
+            <MudChip Icon="@Icons.Material.Filled.Person" Size="MudSize.Small">@userName</MudChip>
+        </MudStack>
     </MudStack>
+
+    <!-- Filtros -->
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect T="string" Label="Período" @bind-Value="periodoSeleccionado" Variant="Variant.Outlined" Dense="true">
+                    <MudSelectItem Value="@("hoy")">Hoy</MudSelectItem>
+                    <MudSelectItem Value="@("semana")">Esta Semana</MudSelectItem>
+                    <MudSelectItem Value="@("mes")">Este Mes</MudSelectItem>
+                    <MudSelectItem Value="@("trimestre")">Últimos 3 Meses</MudSelectItem>
+                    <MudSelectItem Value="@("año")">Este Año</MudSelectItem>
+                    <MudSelectItem Value="@("todo")">Todos los tiempos</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect T="string" Label="Estado" @bind-Value="estadoFiltro" Variant="Variant.Outlined" Dense="true">
+                    <MudSelectItem Value="@("")">Todos</MudSelectItem>
+                    <MudSelectItem Value="@("Abierto")">Abiertos</MudSelectItem>
+                    <MudSelectItem Value="@("En Proceso")">En Proceso</MudSelectItem>
+                    <MudSelectItem Value="@("Resuelto")">Resueltos</MudSelectItem>
+                    <MudSelectItem Value="@("Cerrado")">Cerrados</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect T="string" Label="Prioridad" @bind-Value="prioridadFiltro" Variant="Variant.Outlined" Dense="true">
+                    <MudSelectItem Value="@("")">Todas</MudSelectItem>
+                    <MudSelectItem Value="@("Crítica")">Crítica</MudSelectItem>
+                    <MudSelectItem Value="@("Alta")">Alta</MudSelectItem>
+                    <MudSelectItem Value="@("Media")">Media</MudSelectItem>
+                    <MudSelectItem Value="@("Baja")">Baja</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudButton Variant="Variant.Filled" Color="MudColor.Primary" FullWidth="true" 
+                           StartIcon="@Icons.Material.Filled.FilterAlt" OnClick="AplicarFiltros">
+                    Aplicar Filtros
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
 
     @if (isLoading)
     {
         <MudGrid>
-            @for (var i = 0; i < 4; i++)
+            @for (var i = 0; i < 6; i++)
             {
-                <MudItem xs="12" sm="6" md="3">
-                    <MudSkeleton Height="150px" Animation="Animation.Wave" />
+                <MudItem xs="12" sm="6" md="4" lg="2">
+                    <MudSkeleton Height="140px" Animation="Animation.Wave" />
                 </MudItem>
             }
+            <MudItem xs="12"><MudSkeleton Height="400px" Animation="Animation.Wave" /></MudItem>
         </MudGrid>
     }
     else if (!string.IsNullOrEmpty(loadError))
@@ -38,136 +88,252 @@
     }
     else
     {
-        <MudGrid Class="mb-6">
-            <MudItem xs="12" sm="6" md="3">
-                <MudCard Elevation="3" Class="h-100">
-                    <MudCardContent>
-                        <MudStack Spacing="1">
-                            <MudText Typo="Typo.h6">
-                                <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Primary" Class="me-1" />
-                                Total Incidentes
-                            </MudText>
-                            <MudText Typo="Typo.h3">@totalIncidentes</MudText>
-                            <MudText Typo="Typo.caption" Class="text-muted">De @facultadNombre</MudText>
+        <!-- KPI Cards -->
+        <MudGrid Class="mb-4">
+            <MudItem xs="12" sm="6" md="4" lg="2">
+                <MudCard Elevation="4" Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <MudCardContent Class="pb-0">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Style="opacity: 0.9;">Total</MudText>
+                            <MudText Typo="Typo.h4" Style="font-weight: 600;">@totalIncidentes</MudText>
+                            <MudText Typo="Typo.body2" Style="opacity: 0.8;">Incidentes</MudText>
                         </MudStack>
                     </MudCardContent>
-                    <MudCardActions>
-                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="VerIncidentes">Ver todos</MudButton>
+                    <MudCardActions Class="pt-0 pb-2">
+                        <MudIconButton Icon="@Icons.Material.Filled.TrendingUp" Size="MudSize.Small" Style="color: white; opacity: 0.8;" />
                     </MudCardActions>
                 </MudCard>
             </MudItem>
 
-            <MudItem xs="12" sm="6" md="3">
-                <MudCard Elevation="3" Class="h-100">
-                    <MudCardContent>
-                        <MudStack Spacing="1">
-                            <MudText Typo="Typo.h6">
-                                <MudIcon Icon="@Icons.Material.Filled.HourglassEmpty" Color="Color.Warning" Class="me-1" />
-                                Abiertos/Pendientes
-                            </MudText>
-                            <MudText Typo="Typo.h3">@incidentesAbiertos</MudText>
-                            <MudText Typo="Typo.caption" Class="text-muted">Sin iniciar</MudText>
+            <MudItem xs="12" sm="6" md="4" lg="2">
+                <MudCard Elevation="4" Style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                    <MudCardContent Class="pb-0">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Style="opacity: 0.9;">Abiertos</MudText>
+                            <MudText Typo="Typo.h4" Style="font-weight: 600;">@incidentesAbiertos</MudText>
+                            <MudText Typo="Typo.body2" Style="opacity: 0.8;">Sin atender</MudText>
                         </MudStack>
                     </MudCardContent>
-                    <MudCardActions>
-                        <MudButton Variant="Variant.Text" Color="Color.Warning" OnClick='() => VerIncidentesPorEstado("Abierto")'>Ver detalles</MudButton>
+                    <MudCardActions Class="pt-0 pb-2">
+                        <MudIconButton Icon="@Icons.Material.Filled.HourglassEmpty" Size="MudSize.Small" Style="color: white; opacity: 0.8;" />
                     </MudCardActions>
                 </MudCard>
             </MudItem>
 
-            <MudItem xs="12" sm="6" md="3">
-                <MudCard Elevation="3" Class="h-100">
-                    <MudCardContent>
-                        <MudStack Spacing="1">
-                            <MudText Typo="Typo.h6">
-                                <MudIcon Icon="@Icons.Material.Filled.Engineering" Color="Color.Info" Class="me-1" />
-                                En Proceso
-                            </MudText>
-                            <MudText Typo="Typo.h3">@incidentesEnProceso</MudText>
-                            <MudText Typo="Typo.caption" Class="text-muted">Atendidos actualmente</MudText>
+            <MudItem xs="12" sm="6" md="4" lg="2">
+                <MudCard Elevation="4" Style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                    <MudCardContent Class="pb-0">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Style="opacity: 0.9;">En Proceso</MudText>
+                            <MudText Typo="Typo.h4" Style="font-weight: 600;">@incidentesEnProceso</MudText>
+                            <MudText Typo="Typo.body2" Style="opacity: 0.8;">Trabajando</MudText>
                         </MudStack>
                     </MudCardContent>
-                    <MudCardActions>
-                        <MudButton Variant="Variant.Text" Color="Color.Info" OnClick='() => VerIncidentesPorEstado("En Proceso")'>Seguimiento</MudButton>
+                    <MudCardActions Class="pt-0 pb-2">
+                        <MudIconButton Icon="@Icons.Material.Filled.Engineering" Size="MudSize.Small" Style="color: white; opacity: 0.8;" />
                     </MudCardActions>
                 </MudCard>
             </MudItem>
 
-            <MudItem xs="12" sm="6" md="3">
-                <MudCard Elevation="3" Class="h-100">
-                    <MudCardContent>
-                        <MudStack Spacing="1">
-                            <MudText Typo="Typo.h6">
-                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="me-1" />
-                                Resueltos
-                            </MudText>
-                            <MudText Typo="Typo.h3">@incidentesResueltos</MudText>
-                            <MudText Typo="Typo.caption" Class="text-muted">Completados</MudText>
+            <MudItem xs="12" sm="6" md="4" lg="2">
+                <MudCard Elevation="4" Style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;">
+                    <MudCardContent Class="pb-0">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Style="opacity: 0.9;">Resueltos</MudText>
+                            <MudText Typo="Typo.h4" Style="font-weight: 600;">@incidentesResueltos</MudText>
+                            <MudText Typo="Typo.body2" Style="opacity: 0.8;">Completados</MudText>
                         </MudStack>
                     </MudCardContent>
-                    <MudCardActions>
-                        <MudButton Variant="Variant.Text" Color="Color.Success" OnClick='() => VerIncidentesPorEstado("Resuelto")'>Ver historial</MudButton>
+                    <MudCardActions Class="pt-0 pb-2">
+                        <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" Size="MudSize.Small" Style="color: white; opacity: 0.8;" />
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4" lg="2">
+                <MudCard Elevation="4" Style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white;">
+                    <MudCardContent Class="pb-0">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Style="opacity: 0.9;">Tasa Resolución</MudText>
+                            <MudText Typo="Typo.h4" Style="font-weight: 600;">@tasaResolucion%</MudText>
+                            <MudText Typo="Typo.body2" Style="opacity: 0.8;">Efectividad</MudText>
+                        </MudStack>
+                    </MudCardContent>
+                    <MudCardActions Class="pt-0 pb-2">
+                        <MudIconButton Icon="@Icons.Material.Filled.Speed" Size="MudSize.Small" Style="color: white; opacity: 0.8;" />
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4" lg="2">
+                <MudCard Elevation="4" Style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); color: white;">
+                    <MudCardContent Class="pb-0">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Style="opacity: 0.9;">Tiempo Promedio</MudText>
+                            <MudText Typo="Typo.h5" Style="font-weight: 600;">@tiempoPromedioResolucion</MudText>
+                            <MudText Typo="Typo.body2" Style="opacity: 0.8;">Resolución</MudText>
+                        </MudStack>
+                    </MudCardContent>
+                    <MudCardActions Class="pt-0 pb-2">
+                        <MudIconButton Icon="@Icons.Material.Filled.Timer" Size="MudSize.Small" Style="color: white; opacity: 0.8;" />
                     </MudCardActions>
                 </MudCard>
             </MudItem>
         </MudGrid>
 
-        <MudGrid>
-            <MudItem xs="12" md="8">
-                <MudPaper Elevation="3" Class="pa-4">
-                    <MudText Typo="Typo.h6" Class="mb-3">Estadísticas de los últimos 30 días</MudText>
-                    <MudGrid>
-                        <MudItem xs="12" sm="6">
-                            <MudStack Spacing="2">
-                                <MudText Typo="Typo.subtitle2">Por Prioridad</MudText>
-                                <MudStack Row="true" AlignItems="AlignItems.Center">
-                                    <MudChip Color="Color.Error" Size="Size.Small">Crítica</MudChip>
-                                    <MudText>@incidentesPorPrioridad.GetValueOrDefault("Crítica", 0)</MudText>
-                                </MudStack>
-                                <MudStack Row="true" AlignItems="AlignItems.Center">
-                                    <MudChip Color="Color.Warning" Size="Size.Small">Alta</MudChip>
-                                    <MudText>@incidentesPorPrioridad.GetValueOrDefault("Alta", 0)</MudText>
-                                </MudStack>
-                                <MudStack Row="true" AlignItems="AlignItems.Center">
-                                    <MudChip Color="Color.Info" Size="Size.Small">Media</MudChip>
-                                    <MudText>@incidentesPorPrioridad.GetValueOrDefault("Media", 0)</MudText>
-                                </MudStack>
-                                <MudStack Row="true" AlignItems="AlignItems.Center">
-                                    <MudChip Color="Color.Default" Size="Size.Small">Baja</MudChip>
-                                    <MudText>@incidentesPorPrioridad.GetValueOrDefault("Baja", 0)</MudText>
-                                </MudStack>
-                            </MudStack>
-                        </MudItem>
-                        <MudItem xs="12" sm="6">
-                            <MudStack Spacing="2">
-                                <MudText Typo="Typo.subtitle2">Métricas</MudText>
-                                <MudText><strong>Tiempo promedio resolución:</strong> @tiempoPromedioResolucion</MudText>
-                                <MudText><strong>Tasa de resolución:</strong> @tasaResolucion%</MudText>
-                                <MudText><strong>Incidentes hoy:</strong> @incidentesHoy</MudText>
-                            </MudStack>
-                        </MudItem>
-                    </MudGrid>
+        <!-- Gráficos principales -->
+        <MudGrid Class="mb-4">
+            <!-- Gráfico de tendencia temporal -->
+            <MudItem xs="12" lg="8">
+                <MudPaper Elevation="4" Class="pa-4" Style="height: 400px;">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                        <MudText Typo="Typo.h6">
+                            <MudIcon Icon="@Icons.Material.Filled.ShowChart" Class="me-2" />
+                            Tendencia de Incidentes
+                        </MudText>
+                        <MudChip Size="MudSize.Small" Color="MudColor.Info">@GetPeriodoLabel()</MudChip>
+                    </MudStack>
+                    <ApexChart TItem="IncidenteTendencia" Title="" Height="310">
+                        <ApexPointSeries TItem="IncidenteTendencia" Items="@tendenciaIncidentes"
+                                         Name="Creados" SeriesType="SeriesType.Line"
+                                         XValue="@(e => e.Fecha.ToString("dd/MM"))"
+                                         YAggregate="@(e => e.Sum(x => x.Creados))"
+                                         OrderBy="@(e => e.X)" Color="#667eea" />
+                        <ApexPointSeries TItem="IncidenteTendencia" Items="@tendenciaIncidentes"
+                                         Name="Resueltos" SeriesType="SeriesType.Line"
+                                         XValue="@(e => e.Fecha.ToString("dd/MM"))"
+                                         YAggregate="@(e => e.Sum(x => x.Resueltos))"
+                                         OrderBy="@(e => e.X)" Color="#43e97b" />
+                    </ApexChart>
                 </MudPaper>
             </MudItem>
 
-            <MudItem xs="12" md="4">
-                <MudPaper Elevation="3" Class="pa-4">
-                    <MudText Typo="Typo.h6" Class="mb-3">Acciones Rápidas</MudText>
-                    <MudStack Spacing="2">
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" 
-                                   StartIcon="@Icons.Material.Filled.List" FullWidth="true"
+            <!-- Gráfico de prioridades -->
+            <MudItem xs="12" md="6" lg="4">
+                <MudPaper Elevation="4" Class="pa-4" Style="height: 400px;">
+                    <MudText Typo="Typo.h6" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.PieChart" Class="me-2" />
+                        Distribución por Prioridad
+                    </MudText>
+                    <ApexChart TItem="PrioridadData" Height="310">
+                        <ApexPointSeries TItem="PrioridadData" Items="@prioridadData"
+                                         SeriesType="SeriesType.Donut"
+                                         Name="Incidentes"
+                                         XValue="@(e => e.Prioridad)"
+                                         YValue="@(e => (decimal)e.Cantidad)"
+                                         OrderByDescending="@(e => e.Y)" />
+                    </ApexChart>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Segunda fila de gráficos -->
+        <MudGrid Class="mb-4">
+            <!-- Gráfico de estados -->
+            <MudItem xs="12" md="6" lg="4">
+                <MudPaper Elevation="4" Class="pa-4" Style="height: 350px;">
+                    <MudText Typo="Typo.h6" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.BarChart" Class="me-2" />
+                        Estados de Incidentes
+                    </MudText>
+                    <ApexChart TItem="EstadoData" Height="260">
+                        <ApexPointSeries TItem="EstadoData" Items="@estadoData"
+                                         SeriesType="SeriesType.Bar"
+                                         Name="Cantidad"
+                                         XValue="@(e => e.Estado)"
+                                         YValue="@(e => (decimal)e.Cantidad)"
+                                         OrderByDescending="@(e => e.Y)" />
+                    </ApexChart>
+                </MudPaper>
+            </MudItem>
+
+            <!-- Top laboratorios con más incidentes -->
+            <MudItem xs="12" md="6" lg="4">
+                <MudPaper Elevation="4" Class="pa-4" Style="height: 350px;">
+                    <MudText Typo="Typo.h6" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Computer" Class="me-2" />
+                        Laboratorios con Más Incidentes
+                    </MudText>
+                    <MudList Dense="true" Class="overflow-auto" Style="max-height: 270px;">
+                        @foreach (var lab in topLaboratorios.Take(5))
+                        {
+                            <MudListItem>
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.body2">@lab.Nombre</MudText>
+                                    <MudChip Size="MudSize.Small" Color="MudColor.Primary">@lab.Cantidad</MudChip>
+                                </MudStack>
+                                <MudProgressLinear Color="MudColor.Primary" Value="@((lab.Cantidad / (double)totalIncidentes) * 100)" />
+                            </MudListItem>
+                        }
+                    </MudList>
+                </MudPaper>
+            </MudItem>
+
+            <!-- Métricas adicionales -->
+            <MudItem xs="12" md="6" lg="4">
+                <MudPaper Elevation="4" Class="pa-4" Style="height: 350px;">
+                    <MudText Typo="Typo.h6" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Analytics" Class="me-2" />
+                        Métricas Clave
+                    </MudText>
+                    <MudStack Spacing="3">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.body2" Class="text-muted">Incidentes Hoy</MudText>
+                            <MudText Typo="Typo.h5">@incidentesHoy</MudText>
+                            <MudProgressLinear Color="MudColor.Info" Value="@((incidentesHoy / Math.Max(totalIncidentes, 1.0)) * 100)" />
+                        </MudStack>
+                        <MudDivider />
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.body2" Class="text-muted">Incidentes Críticos Abiertos</MudText>
+                            <MudText Typo="Typo.h5" Color="MudColor.Error">@incidentesCriticosAbiertos</MudText>
+                            @if (incidentesCriticosAbiertos > 0)
+                            {
+                                <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-1">Requiere atención inmediata</MudAlert>
+                            }
+                        </MudStack>
+                        <MudDivider />
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.body2" Class="text-muted">Tiempo Respuesta Promedio</MudText>
+                            <MudText Typo="Typo.h6">@tiempoPromedioRespuesta</MudText>
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Acciones rápidas -->
+        <MudGrid>
+            <MudItem xs="12">
+                <MudPaper Elevation="4" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.TouchApp" Class="me-2" />
+                        Acciones Rápidas
+                    </MudText>
+                    <MudStack Row="true" Spacing="2" Wrap="Wrap.Wrap">
+                        <MudButton Variant="Variant.Filled" Color="MudColor.Primary" 
+                                   StartIcon="@Icons.Material.Filled.List"
                                    OnClick="VerIncidentes">
                             Ver Todos los Incidentes
                         </MudButton>
-                        <MudButton Variant="Variant.Outlined" Color="Color.Info" 
-                                   StartIcon="@Icons.Material.Filled.Analytics" FullWidth="true"
-                                   OnClick="VerReportes">
-                            Generar Reportes
+                        <MudButton Variant="Variant.Filled" Color="MudColor.Secondary" 
+                                   StartIcon="@Icons.Material.Filled.FileDownload"
+                                   OnClick="ExportarReporte">
+                            Exportar Reporte
                         </MudButton>
-                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" 
-                                   StartIcon="@Icons.Material.Filled.Book" FullWidth="true"
+                        <MudButton Variant="Variant.Filled" Color="MudColor.Tertiary" 
+                                   StartIcon="@Icons.Material.Filled.Analytics"
+                                   OnClick="VerReportes">
+                            Análisis Detallado
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="MudColor.Info" 
+                                   StartIcon="@Icons.Material.Filled.Book"
                                    OnClick="VerBaseConocimientos">
                             Base de Conocimientos
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="MudColor.Success" 
+                                   StartIcon="@Icons.Material.Filled.Refresh"
+                                   OnClick="AplicarFiltros">
+                            Refrescar Dashboard
                         </MudButton>
                     </MudStack>
                 </MudPaper>
@@ -183,14 +349,28 @@
     private bool isLoading = true;
     private string? loadError;
 
+    // Filtros
+    private string periodoSeleccionado = "mes";
+    private string estadoFiltro = "";
+    private string prioridadFiltro = "";
+
+    // KPIs principales
     private int totalIncidentes = 0;
     private int incidentesAbiertos = 0;
     private int incidentesEnProceso = 0;
     private int incidentesResueltos = 0;
     private int incidentesHoy = 0;
+    private int incidentesCriticosAbiertos = 0;
     private string tiempoPromedioResolucion = "N/A";
+    private string tiempoPromedioRespuesta = "N/A";
     private int tasaResolucion = 0;
+    
+    // Datos para gráficos
     private Dictionary<string, int> incidentesPorPrioridad = new();
+    private List<IncidenteTendencia> tendenciaIncidentes = new();
+    private List<PrioridadData> prioridadData = new();
+    private List<EstadoData> estadoData = new();
+    private List<LaboratorioData> topLaboratorios = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -237,25 +417,82 @@
 
         try
         {
-            var incidentes = (await IncidenteService.GetIncidentesByFacultadAsync(facultadId.Value)).ToList();
+            // Obtener incidentes directamente del repositorio con navegación incluida
+            var todosIncidentes = (await IncidenteRepository.GetAllAsync()).Where(i => i.Computadora != null && i.Computadora.Laboratorio != null && i.Computadora.Laboratorio.FacultadID == facultadId.Value).ToList();
             
+            // Aplicar filtro de período
+            var fechaInicio = GetFechaInicioPeriodo();
+            var incidentes = todosIncidentes.Where(i => i.FechaCreacion >= fechaInicio).ToList();
+
+            // Aplicar filtros adicionales
+            if (!string.IsNullOrEmpty(estadoFiltro))
+            {
+                incidentes = incidentes.Where(i => i.Estado == estadoFiltro).ToList();
+            }
+            if (!string.IsNullOrEmpty(prioridadFiltro))
+            {
+                incidentes = incidentes.Where(i => i.Prioridad == prioridadFiltro).ToList();
+            }
+
+            // KPIs principales
             totalIncidentes = incidentes.Count;
             incidentesAbiertos = incidentes.Count(i => i.Estado == "Abierto");
             incidentesEnProceso = incidentes.Count(i => i.Estado == "En Proceso");
             incidentesResueltos = incidentes.Count(i => i.Estado == "Resuelto" || i.Estado == "Cerrado");
             incidentesHoy = incidentes.Count(i => i.FechaCreacion.Date == DateTime.Today);
+            incidentesCriticosAbiertos = incidentes.Count(i => i.Prioridad == "Crítica" && i.Estado == "Abierto");
 
             // Estadísticas por prioridad
             incidentesPorPrioridad = incidentes
                 .GroupBy(i => i.Prioridad)
                 .ToDictionary(g => g.Key, g => g.Count());
 
+            // Datos para gráfico de prioridades
+            prioridadData = incidentesPorPrioridad
+                .Select(kvp => new PrioridadData { Prioridad = kvp.Key, Cantidad = kvp.Value })
+                .OrderByDescending(p => p.Cantidad)
+                .ToList();
+
+            // Datos para gráfico de estados
+            estadoData = incidentes
+                .GroupBy(i => i.Estado)
+                .Select(g => new EstadoData { Estado = g.Key, Cantidad = g.Count() })
+                .OrderByDescending(e => e.Cantidad)
+                .ToList();
+
+            // Top laboratorios
+            topLaboratorios = incidentes
+                .Where(i => i.Computadora?.Laboratorio != null)
+                .GroupBy(i => i.Computadora!.Laboratorio!.Nombre)
+                .Select(g => new LaboratorioData { Nombre = g.Key, Cantidad = g.Count() })
+                .OrderByDescending(l => l.Cantidad)
+                .ToList();
+
+            // Tendencia temporal
+            GenerarTendenciaIncidentes(incidentes, fechaInicio);
+
             // Tiempo promedio de resolución
             var resueltos = incidentes.Where(i => i.FechaResolucion.HasValue).ToList();
             if (resueltos.Any())
             {
                 var promedio = resueltos.Average(i => (i.FechaResolucion!.Value - i.FechaCreacion).TotalHours);
-                tiempoPromedioResolucion = $"{promedio:F1} hrs";
+                tiempoPromedioResolucion = $"{promedio:F1}h";
+            }
+
+            // Tiempo promedio de respuesta (primer asignación)
+            var conAsignaciones = incidentes.Where(i => i.Asignaciones != null && i.Asignaciones.Any()).ToList();
+            if (conAsignaciones.Any())
+            {
+                var promedioRespuesta = conAsignaciones.Average(i => 
+                {
+                    var primeraAsignacion = i.Asignaciones!.OrderBy(a => a.FechaAsignacion).First();
+                    return (primeraAsignacion.FechaAsignacion - i.FechaCreacion).TotalHours;
+                });
+                tiempoPromedioRespuesta = $"{promedioRespuesta:F1}h";
+            }
+            else
+            {
+                tiempoPromedioRespuesta = "N/A";
             }
 
             // Tasa de resolución
@@ -268,6 +505,62 @@
         {
             loadError = $"Error al cargar estadísticas: {ex.Message}";
         }
+    }
+
+    private void GenerarTendenciaIncidentes(List<Incidente> incidentes, DateTime fechaInicio)
+    {
+        var dias = (DateTime.Today - fechaInicio.Date).Days + 1;
+        tendenciaIncidentes = new List<IncidenteTendencia>();
+
+        for (int i = 0; i < dias; i++)
+        {
+            var fecha = fechaInicio.Date.AddDays(i);
+            tendenciaIncidentes.Add(new IncidenteTendencia
+            {
+                Fecha = fecha,
+                Creados = incidentes.Count(inc => inc.FechaCreacion.Date == fecha),
+                Resueltos = incidentes.Count(inc => inc.FechaResolucion.HasValue && inc.FechaResolucion.Value.Date == fecha)
+            });
+        }
+    }
+
+    private DateTime GetFechaInicioPeriodo()
+    {
+        return periodoSeleccionado switch
+        {
+            "hoy" => DateTime.Today,
+            "semana" => DateTime.Today.AddDays(-7),
+            "mes" => DateTime.Today.AddMonths(-1),
+            "trimestre" => DateTime.Today.AddMonths(-3),
+            "año" => DateTime.Today.AddYears(-1),
+            _ => DateTime.MinValue
+        };
+    }
+
+    private string GetPeriodoLabel()
+    {
+        return periodoSeleccionado switch
+        {
+            "hoy" => "Hoy",
+            "semana" => "Últimos 7 días",
+            "mes" => "Último mes",
+            "trimestre" => "Últimos 3 meses",
+            "año" => "Último año",
+            _ => "Todos los tiempos"
+        };
+    }
+
+    private async Task AplicarFiltros()
+    {
+        isLoading = true;
+        await CargarEstadisticas();
+        isLoading = false;
+    }
+
+    private void ExportarReporte()
+    {
+        // TODO: Implementar exportación a Excel/PDF
+        Navigation.NavigateTo("/administrativo/reportes");
     }
 
     private void VerIncidentes()
@@ -288,5 +581,31 @@
     private void VerBaseConocimientos()
     {
         Navigation.NavigateTo("/administrativo/conocimientos");
+    }
+
+    // Clases para datos de gráficos
+    private class IncidenteTendencia
+    {
+        public DateTime Fecha { get; set; }
+        public int Creados { get; set; }
+        public int Resueltos { get; set; }
+    }
+
+    private class PrioridadData
+    {
+        public string Prioridad { get; set; } = "";
+        public int Cantidad { get; set; }
+    }
+
+    private class EstadoData
+    {
+        public string Estado { get; set; } = "";
+        public int Cantidad { get; set; }
+    }
+
+    private class LaboratorioData
+    {
+        public string Nombre { get; set; } = "";
+        public int Cantidad { get; set; }
     }
 }
