@@ -1,0 +1,212 @@
+@page "/docente/incidencias/nuevo"
+@attribute [Authorize(Roles = "Docente")]
+@rendermode InteractiveServer
+@using IncidentManagement.Application.Interfaces
+@using IncidentManagement.Application.DTOs
+@inject IComputadoraRepository ComputadoraRepository
+@inject ILaboratorioRepository LaboratorioRepository
+@inject IIncidenteService IncidenteService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Nuevo Incidente</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudStack Spacing="1" Class="mb-4">
+        <MudText Typo="Typo.h4">Reportar Incidente</MudText>
+        <MudText Typo="Typo.subtitle2" Class="text-muted">Describe el problema técnico para que el equipo de soporte pueda ayudarte.</MudText>
+    </MudStack>
+
+    @if (isLoading)
+    {
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudSkeleton Height="250px" Animation="Animation.Wave" />
+        </MudPaper>
+    }
+    else if (!string.IsNullOrEmpty(loadError))
+    {
+        <MudAlert Severity="Severity.Error" Variant="Variant.Filled">@loadError</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="2" Class="pa-5">
+            <EditForm Model="@formModel" OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+
+                <MudStack Spacing="3">
+                    <div>
+                        <label for="laboratorio-select" class="mb-2">Laboratorio</label>
+                        <select id="laboratorio-select" class="form-control" @bind="laboratorioSeleccionadoId">
+                            <option value="">-- Selecciona un laboratorio --</option>
+                            @foreach (var lab in laboratorios)
+                            {
+                                <option value="@lab.LaboratorioID">@lab.Nombre</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="computadora-select" class="mb-2">Computadora</label>
+                        <select id="computadora-select" class="form-control" @bind="computadoraSeleccionadaId" required>
+                            <option value="">-- Selecciona una computadora --</option>
+                            @foreach (var comp in ComputadorasFiltradas)
+                            {
+                                <option value="@comp.ComputadoraID">@comp.CodigoEquipo - @comp.Modelo</option>
+                            }
+                        </select>
+                    </div>
+
+                    <MudTextField @bind-Value="formModel.Titulo"
+                                  Label="Título"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="El título es obligatorio"
+                                  MaxLength="200" />
+
+                    <MudTextField @bind-Value="formModel.Descripcion"
+                                  Label="Descripción detallada"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="La descripción es obligatoria"
+                                  Lines="4" />
+
+                    <div>
+                        <label for="prioridad-select" class="mb-2">Prioridad</label>
+                        <select id="prioridad-select" class="form-control" @bind="formModel.Prioridad" required>
+                            <option value="Alta">Alta</option>
+                            <option value="Media">Media (Recomendada)</option>
+                            <option value="Baja">Baja</option>
+                        </select>
+                    </div>
+                </MudStack>
+
+                <MudStack Direction="Row" Spacing="2" Class="mt-4">
+                    <MudButton ButtonType="ButtonType.Submit" 
+                               Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               Disabled="isSubmitting">
+                        @if (isSubmitting)
+                        {
+                            <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                            <span>Enviando...</span>
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Send" Class="me-2" />
+                            <span>Enviar reporte</span>
+                        }
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" 
+                               Color="Color.Secondary" 
+                               Disabled="isSubmitting" 
+                               OnClick="Volver">
+                        Cancelar
+                    </MudButton>
+                </MudStack>
+            </EditForm>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    private CreateIncidenteDto formModel = new() { Prioridad = "Media" };
+    private List<IncidentManagement.Domain.Entities.Computadora> computadoras = new();
+    private List<IncidentManagement.Domain.Entities.Laboratorio> laboratorios = new();
+    private int? laboratorioSeleccionadoId;
+    private int? computadoraSeleccionadaId;
+    private bool isLoading = true;
+    private bool isSubmitting;
+    private string? loadError;
+    private int? userId;
+
+    private IEnumerable<IncidentManagement.Domain.Entities.Computadora> ComputadorasFiltradas =>
+        laboratorioSeleccionadoId.HasValue
+            ? computadoras.Where(c => c.LaboratorioID == laboratorioSeleccionadoId.Value)
+            : computadoras;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        if (!user.IsInRole("Docente"))
+        {
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        userId = user.GetUserId();
+        if (userId is null)
+        {
+            loadError = "No pudimos identificar tu usuario.";
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            computadoras = (await ComputadoraRepository.GetAllAsync()).ToList();
+            laboratorios = (await LaboratorioRepository.GetAllAsync()).ToList();
+
+            Console.WriteLine($"[DocenteNuevaIncidencia] Computadoras cargadas: {computadoras.Count}");
+            Console.WriteLine($"[DocenteNuevaIncidencia] Laboratorios cargados: {laboratorios.Count}");
+            
+            if (!computadoras.Any())
+            {
+                loadError = "Aún no hay computadoras configuradas. Contacta al administrador.";
+            }
+        }
+        catch (Exception ex)
+        {
+            loadError = "No pudimos cargar las computadoras disponibles.";
+            Console.WriteLine($"[DocenteNuevaIncidencia] Error: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmit(EditContext context)
+    {
+        if (userId is null)
+        {
+            Snackbar.Add("No pudimos validar tu sesión. Inicia nuevamente.", Severity.Error);
+            return;
+        }
+
+        if (!computadoraSeleccionadaId.HasValue)
+        {
+            Snackbar.Add("Debes seleccionar una computadora", Severity.Warning);
+            return;
+        }
+
+        formModel.ComputadoraID = computadoraSeleccionadaId.Value;
+
+        isSubmitting = true;
+        try
+        {
+            await IncidenteService.CreateIncidenteAsync(formModel, userId.Value);
+            Snackbar.Add("Incidente registrado con éxito", Severity.Success);
+            Navigation.NavigateTo("/docente/incidencias");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("No pudimos registrar el incidente. Intenta más tarde.", Severity.Error);
+            Console.WriteLine($"[DocenteNuevaIncidencia] Error al crear: {ex}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Volver() => Navigation.NavigateTo("/docente/incidencias");
+}

@@ -1,0 +1,133 @@
+@page "/docente/base-conocimiento"
+@attribute [Authorize(Roles = "Docente")]
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using IncidentManagement.Application.Interfaces
+@using IncidentManagement.Application.DTOs
+@inject IBaseConocimientoService BaseConocimientoService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Base de Conocimiento</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-8">
+    <MudStack Direction="Row" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+        <div>
+            <MudText Typo="Typo.h4">Base de Conocimiento</MudText>
+            <MudText Typo="Typo.subtitle2" Class="text-muted">Busca soluciones antes de crear un nuevo incidente.</MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddCircle" OnClick="IrANuevaIncidencia">
+            Reportar Incidente
+        </MudButton>
+    </MudStack>
+
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudGrid GutterSize="2">
+            <MudItem xs="12" sm="9">
+                <MudTextField @bind-Value="searchTerm" Label="Buscar" Immediate="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Placeholder="Palabras clave, categoría o título" />
+            </MudItem>
+            <MudItem xs="12" sm="3" Class="d-flex align-end">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Search" Disabled="isLoading" OnClick="BuscarAsync">
+                    Buscar
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    @if (isLoading)
+    {
+        <MudSkeleton Height="250px" Animation="Animation.Wave" />
+    }
+    else if (!string.IsNullOrEmpty(loadError))
+    {
+        <MudAlert Severity="Severity.Error" Variant="Variant.Filled">@loadError</MudAlert>
+    }
+    else if (!articulos.Any())
+    {
+        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">No encontramos artículos que coincidan con la búsqueda.</MudAlert>
+    }
+    else
+    {
+        <MudExpansionPanels Elevation="2" Class="mb-6">
+            @foreach (var articulo in articulos)
+            {
+                <MudExpansionPanel Text="@articulo.Titulo" SubText="@PanelSubtitulo(articulo)">
+                    <MudStack Spacing="2">
+                        <MudChip Color="Color.Info" Variant="Variant.Outlined" Size="Size.Small">@articulo.Categoria</MudChip>
+                        <MudText Typo="Typo.subtitle2">Problema</MudText>
+                        <MudText Typo="Typo.body2">@articulo.Problema</MudText>
+                        <MudDivider />
+                        <MudText Typo="Typo.subtitle2">Solución</MudText>
+                        <MudText Typo="Typo.body2">@articulo.Solucion</MudText>
+                    </MudStack>
+                </MudExpansionPanel>
+            }
+        </MudExpansionPanels>
+    }
+</MudContainer>
+
+@code {
+    private List<BaseConocimientoDto> articulos = new();
+    private string searchTerm = string.Empty;
+    private bool isLoading = true;
+    private string? loadError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        if (!user.IsInRole("Docente"))
+        {
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        await BuscarAsync();
+    }
+
+    private async Task BuscarAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                articulos = (await BaseConocimientoService.GetAllAsync()).ToList();
+            }
+            else
+            {
+                articulos = (await BaseConocimientoService.SearchAsync(searchTerm)).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            loadError = "No pudimos cargar la base de conocimiento.";
+            Console.WriteLine($"[DocenteBaseConocimiento] Error: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string PanelSubtitulo(BaseConocimientoDto articulo)
+    {
+        var fecha = articulo.FechaCreacion.ToString("dd/MM/yyyy");
+        return string.IsNullOrWhiteSpace(articulo.Categoria)
+            ? $"Actualizado el {fecha}"
+            : $"{articulo.Categoria} · {fecha}";
+    }
+
+    private void IrANuevaIncidencia() => Navigation.NavigateTo("/docente/incidencias/nuevo");
+}
