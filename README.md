@@ -173,22 +173,48 @@ IncidentManagement/
 - Consultar base de conocimientos
 - **Rol de monitoreo**: NO asigna ni resuelve técnicamente
 
-### Laboratorista (Técnico)
-- Dashboard de trabajo personal
-- Ver **MIS incidentes asignados**
-- Aceptar/rechazar asignaciones
-- Trabajar y resolver incidentes
-- Actualizar estados técnicos (En Progreso, Resuelto, Cerrado)
-- Crear soluciones en base de conocimientos
-- Consultar base de conocimientos
+### 👨‍🔧 Laboratorista Técnico (EsAsignador = 0)
+**Ejemplo:** Roberto Díaz (lab3@uni.edu) - Técnico de la Facultad de Ingeniería
 
-### Laboratorista Supervisor (EsAsignador = 1)
-- **TODO lo del Laboratorista Técnico** +
-- **Asignar incidentes** a técnicos de su facultad
-- **Reasignar** cuando sea necesario
-- Ver **carga de trabajo** de todos los técnicos
-- Supervisar desempeño del equipo
-- Coordinar distribución de tareas
+**Funcionalidades:**
+- ✅ Ver **solo MIS incidentes** asignados a mí
+- ✅ Aceptar o rechazar asignaciones
+- ✅ Trabajar y resolver incidentes asignados
+- ✅ Actualizar estados (En Progreso, Completado)
+- ✅ Registrar soluciones en base de conocimientos
+- ✅ Consultar base de conocimientos
+- ❌ **NO puede asignar** incidentes a otros técnicos
+- ❌ **NO puede ver** todos los incidentes sin filtrar
+
+**Menú visible:**
+- Panel Técnico
+- Mis tareas
+- Base de conocimiento
+
+### 👨‍💼 Laboratorista Supervisor (EsAsignador = 1)
+**Ejemplos:** 
+- Carlos López (lab1@uni.edu) - Supervisor Facultad de Ingeniería
+- Ana Gómez (lab2@uni.edu) - Supervisor Facultad de Ciencias
+
+**Funcionalidades:**
+- ✅ **TODO lo del Laboratorista Técnico** +
+- ✅ **Asignar incidentes** a técnicos de su facultad
+- ✅ **Reasignar** incidentes cuando sea necesario
+- ✅ Ver **TODOS los incidentes** de la facultad
+- ✅ Ver **carga de trabajo** de todos los técnicos
+- ✅ Supervisar y coordinar al equipo técnico
+- ✅ Gestionar distribución de tareas
+
+**Menú visible:**
+- Panel Supervisor
+- Mis tareas
+- Gestionar incidentes (solo Supervisor)
+- Base de conocimiento
+
+**Diferencias clave:**
+1. **Visibilidad**: Supervisor ve todos los incidentes, Técnico solo los suyos
+2. **Asignación**: Solo Supervisor puede asignar/reasignar incidentes
+3. **Panel**: Supervisor tiene vista de gestión completa
 
 ## 🔄 Flujo de Trabajo
 
