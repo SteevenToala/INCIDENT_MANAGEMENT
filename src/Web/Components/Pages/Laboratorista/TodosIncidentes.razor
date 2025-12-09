@@ -26,13 +26,13 @@
     else
     {
         <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
-            <MudTabPanel Text="1. Reportado / Pendiente" Icon="@Icons.Material.Filled.ReportProblem" BadgeData="@incidentesReportados.Count">
+            <MudTabPanel Text="1. Reportado" Icon="@Icons.Material.Filled.ReportProblem" BadgeData="@incidentesReportados.Count">
                 <MudTable Items="@incidentesReportados" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true" 
                           Filter="new Func<IncidenteDto, bool>(FilterFunc)" 
                           SortLabel="Ordenar por"
                           RowsPerPage="10">
                     <ToolBarContent>
-                        <MudText Typo="Typo.h6">1. Reportado / Pendiente de Aceptación</MudText>
+                        <MudText Typo="Typo.h6">1. Reportado (Sin Asignar)</MudText>
                         <MudSpacer />
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <select @bind="laboratorioSeleccionadoId" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
@@ -97,13 +97,84 @@
                 </MudTable>
             </MudTabPanel>
             
-            <MudTabPanel Text="2. Trabajo Iniciado" Icon="@Icons.Material.Filled.Engineering" BadgeData="@incidentesIniciados.Count">
+            <MudTabPanel Text="2. Pendiente Aceptación" Icon="@Icons.Material.Filled.HourglassEmpty" BadgeData="@incidentesPendientes.Count">
+                <MudTable Items="@incidentesPendientes" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
+                          Filter="new Func<IncidenteDto, bool>(FilterFunc)" 
+                          SortLabel="Ordenar por"
+                          RowsPerPage="10">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">2. Pendiente de Aceptación (Asignado pero no aceptado)</MudText>
+                        <MudSpacer />
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <select @bind="laboratorioSeleccionadoId" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                                <option value="">Todos los Laboratorios</option>
+                                @foreach (var lab in laboratorios)
+                                {
+                                    <option value="@lab.LaboratorioID">@lab.Nombre</option>
+                                }
+                            </select>
+                            <select @bind="rolSeleccionado" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                                <option value="">Todos los roles</option>
+                                <option value="Estudiante">Estudiantes</option>
+                                <option value="Docente">Docentes</option>
+                            </select>
+                            <select @bind="criterioBusqueda" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                                <option value="todos">Buscar en todos</option>
+                                <option value="codigo">Código</option>
+                                <option value="titulo">Título</option>
+                                <option value="descripcion">Descripción</option>
+                                <option value="reportador">Reportado por</option>
+                                <option value="computadora">Computadora</option>
+                                <option value="laboratorio">Laboratorio</option>
+                            </select>
+                            <MudTextField @bind-Value="searchString" Placeholder="Buscar" Adornment="Adornment.Start" 
+                                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                        </div>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.IncidenteID)">ID</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.CodigoIncidente)">Código</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Titulo)">Título</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Prioridad)">Prioridad</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.EstudianteNombre)">Reportado por</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.ComputadoraNombre)">Computadora</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.LaboratorioNombre)">Laboratorio</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.FechaReporte)">Fecha</MudTableSortLabel></MudTh>
+                        <MudTh>Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="ID">@context.IncidenteID</MudTd>
+                        <MudTd DataLabel="Código">@context.CodigoIncidente</MudTd>
+                        <MudTd DataLabel="Título">@context.Titulo</MudTd>
+                        <MudTd DataLabel="Prioridad">
+                            <MudChip Color="@GetPriorityColor(context.Prioridad)" Size="Size.Small">@context.Prioridad</MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Reportado por">@context.EstudianteNombre</MudTd>
+                        <MudTd DataLabel="Computadora">@context.ComputadoraNombre</MudTd>
+                        <MudTd DataLabel="Laboratorio">@context.LaboratorioNombre</MudTd>
+                        <MudTd DataLabel="Fecha">@context.FechaReporte.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                        <MudTd DataLabel="Acciones">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="@(() => VerDetalle(context.IncidenteID))">
+                                Ver Detalle
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager InfoFormat="{first_item}-{last_item} de {all_items}" HideRowsPerPage="true" />
+                    </PagerContent>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes pendientes de aceptación.</MudText>
+                    </NoRecordsContent>
+                </MudTable>
+            </MudTabPanel>
+            
+            <MudTabPanel Text="3. Trabajo Iniciado" Icon="@Icons.Material.Filled.Engineering" BadgeData="@incidentesIniciados.Count">
                 <MudTable Items="@incidentesIniciados" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
                           Filter="new Func<IncidenteDto, bool>(FilterFunc)" 
                           SortLabel="Ordenar por"
                           RowsPerPage="10">
                     <ToolBarContent>
-                        <MudText Typo="Typo.h6">2. Trabajo Iniciado - En Progreso</MudText>
+                        <MudText Typo="Typo.h6">3. Trabajo Iniciado - En Progreso</MudText>
                         <MudSpacer />
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <select @bind="laboratorioSeleccionadoId" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
@@ -168,13 +239,13 @@
                 </MudTable>
             </MudTabPanel>
             
-            <MudTabPanel Text="3. Trabajo Completado" Icon="@Icons.Material.Filled.Assignment" BadgeData="@incidentesCompletados.Count">
+            <MudTabPanel Text="4. Trabajo Completado" Icon="@Icons.Material.Filled.Assignment" BadgeData="@incidentesCompletados.Count">
                 <MudTable Items="@incidentesCompletados" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
                           Filter="new Func<IncidenteDto, bool>(FilterFunc)" 
                           SortLabel="Ordenar por"
                           RowsPerPage="10">
                     <ToolBarContent>
-                        <MudText Typo="Typo.h6">3. Trabajo Completado</MudText>
+                        <MudText Typo="Typo.h6">4. Trabajo Completado</MudText>
                         <MudSpacer />
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <select @bind="laboratorioSeleccionadoId" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
@@ -239,13 +310,13 @@
                 </MudTable>
             </MudTabPanel>
             
-            <MudTabPanel Text="4. Resuelto" Icon="@Icons.Material.Filled.CheckCircle" BadgeData="@incidentesResueltos.Count">
+            <MudTabPanel Text="5. Resuelto" Icon="@Icons.Material.Filled.CheckCircle" BadgeData="@incidentesResueltos.Count">
                 <MudTable Items="@incidentesResueltos" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
                           Filter="new Func<IncidenteDto, bool>(FilterFunc)" 
                           SortLabel="Ordenar por"
                           RowsPerPage="10">
                     <ToolBarContent>
-                        <MudText Typo="Typo.h6">4. Incidentes Resueltos</MudText>
+                        <MudText Typo="Typo.h6">5. Incidentes Resueltos</MudText>
                         <MudSpacer />
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <select @bind="laboratorioSeleccionadoId" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
@@ -310,13 +381,13 @@
                 </MudTable>
             </MudTabPanel>
             
-            <MudTabPanel Text="5. Cerrado" Icon="@Icons.Material.Filled.Lock" BadgeData="@incidentesCerrados.Count">
+            <MudTabPanel Text="6. Cerrado" Icon="@Icons.Material.Filled.Lock" BadgeData="@incidentesCerrados.Count">
                 <MudTable Items="@incidentesCerrados" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
                           Filter="new Func<IncidenteDto, bool>(FilterFunc)" 
                           SortLabel="Ordenar por"
                           RowsPerPage="10">
                     <ToolBarContent>
-                        <MudText Typo="Typo.h6">5. Incidentes Cerrados</MudText>
+                        <MudText Typo="Typo.h6">6. Incidentes Cerrados</MudText>
                         <MudSpacer />
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <select @bind="laboratorioSeleccionadoId" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
@@ -394,6 +465,7 @@
     private string criterioBusqueda = "todos";
     
     private List<IncidenteDto> incidentesReportados = new();
+    private List<IncidenteDto> incidentesPendientes = new();
     private List<IncidenteDto> incidentesAsignados = new();
     private List<IncidenteDto> incidentesIniciados = new();
     private List<IncidenteDto> incidentesCompletados = new();
@@ -473,15 +545,22 @@
             // 2. Asignado (Ya no se usa - se movió a pestaña 1)
             incidentesAsignados = new List<IncidenteDto>();
             
-            // 1. Reportado / Pendiente de Aceptación (sin asignar O asignado pero pendiente, NO en estados superiores)
+            // 1. Reportado (Estado: "Abierto" sin asignar)
             incidentesReportados = todasIncidencias.Where(i => 
-                ((i.Estado == "Abierto" && i.TecnicoID == null) || 
-                (i.TecnicoID != null && (string.IsNullOrEmpty(i.EstadoAsignacion) || i.EstadoAsignacion == "Pendiente"))) &&
+                i.Estado == "Abierto" && i.TecnicoID == null &&
                 i.EstadoAsignacion != "Aceptado" && i.EstadoAsignacion != "Completado" &&
                 i.Estado != "Resuelto" && i.Estado != "Cerrado"
             ).ToList();
             
-            Console.WriteLine($"[TodosIncidentes] Reportados: {incidentesReportados.Count}, Asignados: {incidentesAsignados.Count}, Iniciados: {incidentesIniciados.Count}, Completados: {incidentesCompletados.Count}, Resueltos: {incidentesResueltos.Count}, Cerrados: {incidentesCerrados.Count}");
+            // 2. Pendiente de Aceptación (Asignado pero pendiente o sin estado de asignación)
+            incidentesPendientes = todasIncidencias.Where(i => 
+                i.TecnicoID != null && 
+                (string.IsNullOrEmpty(i.EstadoAsignacion) || i.EstadoAsignacion == "Pendiente") &&
+                i.EstadoAsignacion != "Aceptado" && i.EstadoAsignacion != "Completado" &&
+                i.Estado != "Resuelto" && i.Estado != "Cerrado"
+            ).ToList();
+            
+            Console.WriteLine($"[TodosIncidentes] Reportados: {incidentesReportados.Count}, Pendientes: {incidentesPendientes.Count}, Asignados: {incidentesAsignados.Count}, Iniciados: {incidentesIniciados.Count}, Completados: {incidentesCompletados.Count}, Resueltos: {incidentesResueltos.Count}, Cerrados: {incidentesCerrados.Count}");
         }
         catch (Exception ex)
         {
