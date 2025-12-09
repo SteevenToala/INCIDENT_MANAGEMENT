@@ -7,10 +7,12 @@ namespace IncidentManagement.Application.Services;
 public class BaseConocimientoService : IBaseConocimientoService
 {
     private readonly IBaseConocimientoRepository _repository;
+    private readonly IIncidenteRepository _incidenteRepository;
 
-    public BaseConocimientoService(IBaseConocimientoRepository repository)
+    public BaseConocimientoService(IBaseConocimientoRepository repository, IIncidenteRepository incidenteRepository)
     {
         _repository = repository;
+        _incidenteRepository = incidenteRepository;
     }
 
     public async Task<IEnumerable<BaseConocimientoDto>> GetAllAsync()
@@ -33,6 +35,19 @@ public class BaseConocimientoService : IBaseConocimientoService
 
     public async Task<BaseConocimientoDto> CreateAsync(CreateBaseConocimientoDto dto, int usuarioCreadorId)
     {
+        int? tiempoResolucion = null;
+        
+        // Si está relacionado a un incidente, calcular tiempo de resolución
+        if (dto.IncidenteRelacionadoID.HasValue)
+        {
+            var incidente = await _incidenteRepository.GetByIdAsync(dto.IncidenteRelacionadoID.Value);
+            if (incidente != null && incidente.FechaResolucion.HasValue)
+            {
+                var tiempoTotal = incidente.FechaResolucion.Value - incidente.FechaCreacion;
+                tiempoResolucion = (int)tiempoTotal.TotalMinutes;
+            }
+        }
+        
         var conocimiento = new BaseConocimiento
         {
             Titulo = dto.Titulo,
@@ -42,6 +57,7 @@ public class BaseConocimientoService : IBaseConocimientoService
             Palabras_Clave = dto.PalabrasClave,
             IncidenteRelacionadoID = dto.IncidenteRelacionadoID,
             UsuarioCreadorID = usuarioCreadorId,
+            TiempoResolucion = tiempoResolucion,
             FechaCreacion = DateTime.Now,
             FechaActualizacion = DateTime.Now,
             Efectividad = 0
@@ -62,7 +78,8 @@ public class BaseConocimientoService : IBaseConocimientoService
             Categoria = conocimiento.Categoria,
             PalabrasClave = conocimiento.Palabras_Clave,
             FechaCreacion = conocimiento.FechaCreacion,
-            Efectividad = conocimiento.Efectividad
+            Efectividad = conocimiento.Efectividad,
+            TiempoResolucion = conocimiento.TiempoResolucion
         };
     }
 }

@@ -18,6 +18,19 @@ public class Incidente
     public DateTime? FechaResolucion { get; set; }
     public bool Eliminado { get; set; }
 
+    // Propiedades calculadas
+    public double? TiempoResolucionHoras 
+    { 
+        get 
+        {
+            if (FechaResolucion.HasValue)
+            {
+                return (FechaResolucion.Value - FechaCreacion).TotalHours;
+            }
+            return null;
+        }
+    }
+
     // Navigation properties
     public virtual Computadora Computadora { get; set; } = null!;
     public virtual Usuario UsuarioReportador { get; set; } = null!;

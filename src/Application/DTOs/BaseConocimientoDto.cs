@@ -10,6 +10,7 @@ public class BaseConocimientoDto
     public string? PalabrasClave { get; set; }
     public DateTime FechaCreacion { get; set; }
     public int Efectividad { get; set; }
+    public int? TiempoResolucion { get; set; }
 }
 
 public class CreateBaseConocimientoDto
