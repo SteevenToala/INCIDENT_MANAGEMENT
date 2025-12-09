@@ -1,0 +1,231 @@
+@page "/administrativo/incidentes/detalle"
+@attribute [Authorize(Roles = "Administrativo")]
+@rendermode InteractiveServer
+@using IncidentManagement.Application.Interfaces
+@using IncidentManagement.Application.DTOs
+@inject IIncidenteService IncidenteService
+@inject IAsignacionRepository AsignacionRepository
+@inject NavigationManager Navigation
+
+<PageTitle>Detalle del Incidente</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" 
+               Color="Color.Default" OnClick="Volver" Class="mb-3">
+        Volver a Incidentes
+    </MudButton>
+
+    @if (isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+    }
+    else if (incidente != null)
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack Spacing="3">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <MudText Typo="Typo.h4">@incidente.CodigoIncidente</MudText>
+                            <MudChip Color="@GetEstadoColor(incidente.Estado)" Size="Size.Large">
+                                @incidente.Estado
+                            </MudChip>
+                        </div>
+                        
+                        <MudDivider />
+                        
+                        <MudText Typo="Typo.h5">@incidente.Titulo</MudText>
+                        
+                        <MudStack Row="true" Spacing="2" Class="flex-wrap">
+                            <MudChip Icon="@Icons.Material.Filled.Flag" Color="@GetPrioridadColor(incidente.Prioridad)" Size="Size.Small">
+                                Prioridad: @incidente.Prioridad
+                            </MudChip>
+                            <MudChip Icon="@Icons.Material.Filled.Computer" Size="Size.Small">
+                                @incidente.ComputadoraNombre
+                            </MudChip>
+                            <MudChip Icon="@Icons.Material.Filled.Room" Size="Size.Small">
+                                @incidente.LaboratorioNombre
+                            </MudChip>
+                        </MudStack>
+                        
+                        <MudText><strong>Descripción:</strong></MudText>
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: #f5f5f5;">
+                            <MudText>@incidente.Descripcion</MudText>
+                        </MudPaper>
+                        
+                        <MudGrid>
+                            <MudItem xs="12" sm="6">
+                                <MudText><strong>Reportado por:</strong> @incidente.UsuarioReportador</MudText>
+                                <MudText><strong>Rol:</strong> @incidente.RolReportador</MudText>
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudText><strong>Fecha reporte:</strong> @incidente.FechaReporte.ToString("dd/MM/yyyy HH:mm")</MudText>
+                                @if (incidente.FechaResolucion.HasValue)
+                                {
+                                    <MudText><strong>Fecha resolución:</strong> @incidente.FechaResolucion.Value.ToString("dd/MM/yyyy HH:mm")</MudText>
+                                }
+                            </MudItem>
+                        </MudGrid>
+
+                        @if (asignacionActual != null)
+                        {
+                            <MudDivider />
+                            <MudText Typo="Typo.h6">Información de Asignación</MudText>
+                            <MudGrid>
+                                <MudItem xs="12" sm="6">
+                                    <MudText><strong>Asignado a:</strong> @asignacionActual.NombreTecnico</MudText>
+                                    <MudText><strong>Tipo:</strong> @asignacionActual.TipoAsignacion</MudText>
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudText><strong>Estado asignación:</strong></MudText>
+                                    <MudChip Color="@GetEstadoAsignacionColor(asignacionActual.EstadoAsignacion)" Size="Size.Small">
+                                        @asignacionActual.EstadoAsignacion
+                                    </MudChip>
+                                    @if (asignacionActual.FechaAsignacion.HasValue)
+                                    {
+                                        <MudText><strong>Asignado:</strong> @asignacionActual.FechaAsignacion.Value.ToString("dd/MM/yyyy HH:mm")</MudText>
+                                    }
+                                </MudItem>
+                            </MudGrid>
+
+                            @if (!string.IsNullOrEmpty(asignacionActual.Notas))
+                            {
+                                <div>
+                                    <MudText><strong>Notas de asignación:</strong></MudText>
+                                    <MudPaper Elevation="0" Class="pa-2" Style="background-color: #f5f5f5;">
+                                        <MudText Typo="Typo.body2">@asignacionActual.Notas</MudText>
+                                    </MudPaper>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                                Este incidente aún no ha sido asignado a ningún técnico.
+                            </MudAlert>
+                        }
+
+                        @if (incidente.FechaResolucion.HasValue)
+                        {
+                            var tiempoResolucion = (incidente.FechaResolucion.Value - incidente.FechaCreacion).TotalHours;
+                            <MudDivider />
+                            <MudText Typo="Typo.h6">Métricas</MudText>
+                            <MudText><strong>Tiempo de resolución:</strong> @tiempoResolucion.ToString("F1") horas</MudText>
+                        }
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    [SupplyParameterFromQuery(Name = "id")]
+    public int? IncidenteId { get; set; }
+
+    private bool isLoading = true;
+    private string? errorMessage;
+    private IncidenteDto? incidente;
+    private AsignacionDto? asignacionActual;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!IncidenteId.HasValue)
+        {
+            errorMessage = "ID de incidente no proporcionado";
+            isLoading = false;
+            return;
+        }
+
+        await CargarIncidente();
+    }
+
+    private async Task CargarIncidente()
+    {
+        try
+        {
+            incidente = await IncidenteService.GetIncidenteByIdAsync(IncidenteId!.Value);
+            
+            if (incidente == null)
+            {
+                errorMessage = "Incidente no encontrado";
+                return;
+            }
+
+            // Cargar asignación actual
+            var asignaciones = await AsignacionRepository.GetByIncidenteIdAsync(IncidenteId.Value);
+            var asignacion = asignaciones
+                .OrderByDescending(a => a.FechaAsignacion)
+                .FirstOrDefault();
+
+            if (asignacion != null)
+            {
+                asignacionActual = new AsignacionDto
+                {
+                    AsignacionID = asignacion.AsignacionID,
+                    IncidenteID = asignacion.IncidenteID,
+                    UsuarioAsignadoID = asignacion.UsuarioAsignadoID,
+                    NombreTecnico = asignacion.UsuarioAsignado?.NombreCompleto ?? "Desconocido",
+                    TipoAsignacion = asignacion.TipoAsignacion,
+                    EstadoAsignacion = asignacion.EstadoAsignacion,
+                    FechaAsignacion = asignacion.FechaAsignacion,
+                    FechaAceptacion = asignacion.FechaAceptacion,
+                    FechaCompletacion = asignacion.FechaCompletacion,
+                    Notas = asignacion.Notas
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar el incidente: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/administrativo/incidentes");
+    }
+
+    private Color GetEstadoColor(string estado)
+    {
+        return estado switch
+        {
+            "Abierto" => Color.Warning,
+            "En Proceso" => Color.Info,
+            "Resuelto" => Color.Success,
+            "Cerrado" => Color.Default,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetPrioridadColor(string prioridad)
+    {
+        return prioridad switch
+        {
+            "Crítica" => Color.Error,
+            "Alta" => Color.Warning,
+            "Media" => Color.Info,
+            "Baja" => Color.Default,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetEstadoAsignacionColor(string? estado)
+    {
+        return estado switch
+        {
+            "Pendiente" => Color.Warning,
+            "Aceptado" => Color.Info,
+            "Completado" => Color.Success,
+            _ => Color.Default
+        };
+    }
+}

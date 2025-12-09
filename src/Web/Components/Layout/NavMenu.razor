@@ -134,15 +134,14 @@
             },
             "administrativo" => new[]
             {
-                new MenuSection("Operaciones", new[]
+                new MenuSection("Gestión", new[]
                 {
-                    new MenuItem("Gestión de casos", "/administrativo/incidentes", Icons.Material.Filled.Assignment),
-                    new MenuItem("Asignar técnicos", "/administrativo/asignaciones", Icons.Material.Filled.AssignmentInd)
-                }),
-                new MenuSection("Control", new[]
-                {
-                    new MenuItem("Usuarios", "/administrativo/usuarios", Icons.Material.Filled.Group),
+                    new MenuItem("Incidentes", "/administrativo/incidentes", Icons.Material.Filled.Assignment),
                     new MenuItem("Reportes", "/administrativo/reportes", Icons.Material.Filled.Analytics)
+                }),
+                new MenuSection("Recursos", new[]
+                {
+                    new MenuItem("Base de conocimiento", "/administrativo/conocimientos", Icons.Material.Filled.MenuBook)
                 })
             },
             "laboratorista" => new[]

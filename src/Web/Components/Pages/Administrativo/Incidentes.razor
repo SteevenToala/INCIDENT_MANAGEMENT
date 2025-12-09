@@ -1,0 +1,339 @@
+@page "/administrativo/incidentes"
+@attribute [Authorize(Roles = "Administrativo")]
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using IncidentManagement.Application.Interfaces
+@using IncidentManagement.Application.DTOs
+@using IncidentManagement.Domain.Entities
+@inject IIncidenteService IncidenteService
+@inject ILaboratorioRepository LaboratorioRepository
+@inject IUsuarioRepository UsuarioRepository
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Gestión de Incidentes</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+        <MudText Typo="Typo.h4">Gestión de Incidentes de @facultadNombre</MudText>
+        <MudSpacer />
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh" OnClick="CargarIncidentes">
+            Actualizar
+        </MudButton>
+    </MudStack>
+
+    @if (isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudStack Spacing="3">
+                <!-- Filtros -->
+                <MudGrid>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudSelect @bind-Value="estadoSeleccionado" Label="Estado" Variant="Variant.Outlined" Clearable="true">
+                            <MudSelectItem Value='""'>Todos</MudSelectItem>
+                            <MudSelectItem Value='"Abierto"'>Abierto</MudSelectItem>
+                            <MudSelectItem Value='"En Proceso"'>En Proceso</MudSelectItem>
+                            <MudSelectItem Value='"Resuelto"'>Resuelto</MudSelectItem>
+                            <MudSelectItem Value='"Cerrado"'>Cerrado</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudSelect @bind-Value="prioridadSeleccionada" Label="Prioridad" Variant="Variant.Outlined" Clearable="true">
+                            <MudSelectItem Value='""'>Todas</MudSelectItem>
+                            <MudSelectItem Value='"Crítica"'>Crítica</MudSelectItem>
+                            <MudSelectItem Value='"Alta"'>Alta</MudSelectItem>
+                            <MudSelectItem Value='"Media"'>Media</MudSelectItem>
+                            <MudSelectItem Value='"Baja"'>Baja</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudSelect @bind-Value="laboratorioSeleccionadoId" Label="Laboratorio" Variant="Variant.Outlined" Clearable="true">
+                            <MudSelectItem Value='""'>Todos</MudSelectItem>
+                            @foreach (var lab in laboratorios)
+                            {
+                                <MudSelectItem Value="@lab.LaboratorioID.ToString()">@lab.Nombre</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudTextField @bind-Value="searchString" Label="Buscar" Variant="Variant.Outlined"
+                                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                                      Placeholder="Código, título, descripción..." />
+                    </MudItem>
+                </MudGrid>
+
+                <!-- Tabla de incidentes -->
+                <MudTable Items="@IncidentesFiltrados" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
+                          Loading="@isLoading" LoadingProgressColor="Color.Primary"
+                          RowsPerPage="10">
+                    <HeaderContent>
+                        <MudTh>Código</MudTh>
+                        <MudTh>Título</MudTh>
+                        <MudTh>Estado</MudTh>
+                        <MudTh>Prioridad</MudTh>
+                        <MudTh>Reportado por</MudTh>
+                        <MudTh>Laboratorio</MudTh>
+                        <MudTh>Fecha</MudTh>
+                        <MudTh>Asignado a</MudTh>
+                        <MudTh>Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Código">
+                            <MudText Typo="Typo.body2"><strong>@context.CodigoIncidente</strong></MudText>
+                        </MudTd>
+                        <MudTd DataLabel="Título">
+                            <MudText Typo="Typo.body2">@context.Titulo</MudText>
+                        </MudTd>
+                        <MudTd DataLabel="Estado">
+                            <MudChip Color="@GetEstadoColor(context.Estado)" Size="Size.Small">@context.Estado</MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Prioridad">
+                            <MudChip Color="@GetPrioridadColor(context.Prioridad)" Size="Size.Small">@context.Prioridad</MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Reportado por">
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.body2">@context.EstudianteNombre</MudText>
+                                <MudText Typo="Typo.caption" Class="text-muted">@context.RolReportador</MudText>
+                            </MudStack>
+                        </MudTd>
+                        <MudTd DataLabel="Laboratorio">
+                            <MudText Typo="Typo.body2">@context.LaboratorioNombre</MudText>
+                        </MudTd>
+                        <MudTd DataLabel="Fecha">
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.body2">@context.FechaReporte.ToString("dd/MM/yyyy")</MudText>
+                                <MudText Typo="Typo.caption">@context.FechaReporte.ToString("HH:mm")</MudText>
+                            </MudStack>
+                        </MudTd>
+                        <MudTd DataLabel="Asignado a">
+                            @if (context.TecnicoID.HasValue && tecnicos.ContainsKey(context.TecnicoID.Value))
+                            {
+                                <MudStack Spacing="0">
+                                    <MudText Typo="Typo.body2">@tecnicos[context.TecnicoID.Value]</MudText>
+                                    @if (!string.IsNullOrEmpty(context.EstadoAsignacion))
+                                    {
+                                        <MudText Typo="Typo.caption" Class="text-muted">@context.EstadoAsignacion</MudText>
+                                    }
+                                </MudStack>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.caption" Class="text-muted">Sin asignar</MudText>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Acciones">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                       OnClick="@(() => VerDetalle(context.IncidenteID))">
+                                Ver Detalle
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager InfoFormat="{first_item}-{last_item} de {all_items}" />
+                    </PagerContent>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body1" Class="pa-4">No hay incidentes para mostrar con los filtros seleccionados.</MudText>
+                    </NoRecordsContent>
+                </MudTable>
+
+                <!-- Resumen -->
+                <MudStack Row="true" Spacing="4" Class="mt-3">
+                    <MudText Typo="Typo.body2"><strong>Total:</strong> @IncidentesFiltrados.Count()</MudText>
+                    <MudText Typo="Typo.body2"><strong>Abiertos:</strong> @IncidentesFiltrados.Count(i => i.Estado == "Abierto")</MudText>
+                    <MudText Typo="Typo.body2"><strong>En Proceso:</strong> @IncidentesFiltrados.Count(i => i.Estado == "En Proceso")</MudText>
+                    <MudText Typo="Typo.body2"><strong>Resueltos:</strong> @IncidentesFiltrados.Count(i => i.Estado == "Resuelto" || i.Estado == "Cerrado")</MudText>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [SupplyParameterFromQuery(Name = "estado")]
+    public string? EstadoInicial { get; set; }
+
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string? facultadNombre;
+    private int? facultadId;
+
+    private List<IncidenteDto> todosIncidentes = new();
+    private List<Laboratorio> laboratorios = new();
+    private Dictionary<int, string> tecnicos = new();
+
+    private string estadoSeleccionado = "";
+    private string prioridadSeleccionada = "";
+    private string laboratorioSeleccionadoId = "";
+    private string searchString = "";
+
+    private IEnumerable<IncidenteDto> IncidentesFiltrados
+    {
+        get
+        {
+            var result = todosIncidentes.AsEnumerable();
+
+            // Filtro por estado
+            if (!string.IsNullOrWhiteSpace(estadoSeleccionado))
+            {
+                result = result.Where(i => i.Estado == estadoSeleccionado);
+            }
+
+            // Filtro por prioridad
+            if (!string.IsNullOrWhiteSpace(prioridadSeleccionada))
+            {
+                result = result.Where(i => i.Prioridad == prioridadSeleccionada);
+            }
+
+            // Filtro por laboratorio
+            if (!string.IsNullOrWhiteSpace(laboratorioSeleccionadoId) && int.TryParse(laboratorioSeleccionadoId, out int labId))
+            {
+                var labNombre = laboratorios.FirstOrDefault(l => l.LaboratorioID == labId)?.Nombre;
+                if (labNombre != null)
+                {
+                    result = result.Where(i => i.LaboratorioNombre == labNombre);
+                }
+            }
+
+            // Búsqueda por texto
+            if (!string.IsNullOrWhiteSpace(searchString))
+            {
+                result = result.Where(i =>
+                    i.CodigoIncidente.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+                    i.Titulo.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+                    i.Descripcion.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+                    i.EstudianteNombre.Contains(searchString, StringComparison.OrdinalIgnoreCase)
+                );
+            }
+
+            return result.OrderByDescending(i => i.FechaCreacion);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        // Obtener usuario y facultad
+        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(userIdClaim, out int userId))
+        {
+            var usuario = await UsuarioRepository.GetByIdAsync(userId);
+            if (usuario != null && usuario.FacultadID.HasValue)
+            {
+                facultadId = usuario.FacultadID.Value;
+                facultadNombre = usuario.Facultad?.Nombre ?? "Sin Facultad";
+
+                // Aplicar filtro inicial si viene de query
+                if (!string.IsNullOrEmpty(EstadoInicial))
+                {
+                    estadoSeleccionado = EstadoInicial;
+                }
+
+                await CargarLaboratorios();
+                await CargarTecnicos();
+                await CargarIncidentes();
+            }
+            else
+            {
+                errorMessage = "Usuario no tiene facultad asignada";
+            }
+        }
+
+        isLoading = false;
+    }
+
+    private async Task CargarLaboratorios()
+    {
+        try
+        {
+            var labs = await LaboratorioRepository.GetAllAsync();
+            laboratorios = labs.Where(l => l.FacultadID == facultadId).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Administrativo.Incidentes] Error cargando laboratorios: {ex.Message}");
+        }
+    }
+
+    private async Task CargarTecnicos()
+    {
+        try
+        {
+            var usuarios = await UsuarioRepository.GetAllAsync();
+            tecnicos = usuarios
+                .Where(u => u.Rol?.Nombre == "Laboratorista" && u.FacultadID == facultadId)
+                .ToDictionary(u => u.UsuarioID, u => u.NombreCompleto);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Administrativo.Incidentes] Error cargando técnicos: {ex.Message}");
+        }
+    }
+
+    private async Task CargarIncidentes()
+    {
+        if (!facultadId.HasValue) return;
+
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var incidentes = await IncidenteService.GetIncidentesByFacultadAsync(facultadId.Value);
+            todosIncidentes = incidentes.ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar incidentes: {ex.Message}";
+            Console.WriteLine($"[Administrativo.Incidentes] Error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void VerDetalle(int incidenteId)
+    {
+        Navigation.NavigateTo($"/administrativo/incidentes/detalle?id={incidenteId}");
+    }
+
+    private Color GetEstadoColor(string estado)
+    {
+        return estado switch
+        {
+            "Abierto" => Color.Warning,
+            "En Proceso" => Color.Info,
+            "Resuelto" => Color.Success,
+            "Cerrado" => Color.Default,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetPrioridadColor(string prioridad)
+    {
+        return prioridad switch
+        {
+            "Crítica" => Color.Error,
+            "Alta" => Color.Warning,
+            "Media" => Color.Info,
+            "Baja" => Color.Default,
+            _ => Color.Default
+        };
+    }
+}

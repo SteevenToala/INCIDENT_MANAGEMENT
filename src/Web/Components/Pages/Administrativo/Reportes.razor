@@ -1,0 +1,276 @@
+@page "/administrativo/reportes"
+@attribute [Authorize(Roles = "Administrativo")]
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using System.Text
+@using IncidentManagement.Application.Interfaces
+@using IncidentManagement.Application.DTOs
+@inject IIncidenteService IncidenteService
+@inject IUsuarioRepository UsuarioRepository
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+
+<PageTitle>Reportes</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Reportes de @facultadNombre</MudText>
+
+    @if (isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-3">Filtros de Reporte</MudText>
+                    <MudStack Spacing="3">
+                        <MudDateRangePicker Label="Rango de Fechas" @bind-DateRange="rangoFechas" />
+                        
+                        <MudSelect @bind-Value="estadoSeleccionado" Label="Estado" Variant="Variant.Outlined" Clearable="true">
+                            <MudSelectItem Value='""'>Todos</MudSelectItem>
+                            <MudSelectItem Value='"Abierto"'>Abierto</MudSelectItem>
+                            <MudSelectItem Value='"En Proceso"'>En Proceso</MudSelectItem>
+                            <MudSelectItem Value='"Resuelto"'>Resuelto</MudSelectItem>
+                            <MudSelectItem Value='"Cerrado"'>Cerrado</MudSelectItem>
+                        </MudSelect>
+
+                        <MudSelect @bind-Value="prioridadSeleccionada" Label="Prioridad" Variant="Variant.Outlined" Clearable="true">
+                            <MudSelectItem Value='""'>Todas</MudSelectItem>
+                            <MudSelectItem Value='"Crítica"'>Crítica</MudSelectItem>
+                            <MudSelectItem Value='"Alta"'>Alta</MudSelectItem>
+                            <MudSelectItem Value='"Media"'>Media</MudSelectItem>
+                            <MudSelectItem Value='"Baja"'>Baja</MudSelectItem>
+                        </MudSelect>
+
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+                                   StartIcon="@Icons.Material.Filled.Refresh"
+                                   OnClick="GenerarReporte" FullWidth="true">
+                            Generar Reporte
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-3">Exportar</MudText>
+                    <MudStack Spacing="2">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Success"
+                                   StartIcon="@Icons.Material.Filled.Download"
+                                   OnClick="ExportarCSV" FullWidth="true"
+                                   Disabled="!reporteGenerado">
+                            Descargar CSV
+                        </MudButton>
+                        <MudText Typo="Typo.caption" Class="text-muted">
+                            Formato compatible con Excel
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            @if (reporteGenerado)
+            {
+                <MudItem xs="12">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <MudText Typo="Typo.h6" Class="mb-3">Resumen del Reporte</MudText>
+                        <MudGrid>
+                            <MudItem xs="6" sm="3">
+                                <MudPaper Elevation="1" Class="pa-3 text-center">
+                                    <MudText Typo="Typo.h4" Color="Color.Primary">@datosReporte.Total</MudText>
+                                    <MudText Typo="Typo.caption">Total</MudText>
+                                </MudPaper>
+                            </MudItem>
+                            <MudItem xs="6" sm="3">
+                                <MudPaper Elevation="1" Class="pa-3 text-center">
+                                    <MudText Typo="Typo.h4" Color="Color.Warning">@datosReporte.Abiertos</MudText>
+                                    <MudText Typo="Typo.caption">Abiertos</MudText>
+                                </MudPaper>
+                            </MudItem>
+                            <MudItem xs="6" sm="3">
+                                <MudPaper Elevation="1" Class="pa-3 text-center">
+                                    <MudText Typo="Typo.h4" Color="Color.Info">@datosReporte.EnProceso</MudText>
+                                    <MudText Typo="Typo.caption">En Proceso</MudText>
+                                </MudPaper>
+                            </MudItem>
+                            <MudItem xs="6" sm="3">
+                                <MudPaper Elevation="1" Class="pa-3 text-center">
+                                    <MudText Typo="Typo.h4" Color="Color.Success">@datosReporte.Resueltos</MudText>
+                                    <MudText Typo="Typo.caption">Resueltos</MudText>
+                                </MudPaper>
+                            </MudItem>
+                        </MudGrid>
+
+                        <MudDivider Class="my-4" />
+
+                        <MudText Typo="Typo.subtitle1" Class="mb-2"><strong>Detalles:</strong></MudText>
+                        <MudSimpleTable Dense="true" Hover="true">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Título</th>
+                                    <th>Estado</th>
+                                    <th>Prioridad</th>
+                                    <th>Fecha</th>
+                                    <th>Laboratorio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var inc in datosReporte.Incidentes.Take(10))
+                                {
+                                    <tr>
+                                        <td>@inc.CodigoIncidente</td>
+                                        <td>@inc.Titulo</td>
+                                        <td><MudChip Size="Size.Small" Color="@GetEstadoColor(inc.Estado)">@inc.Estado</MudChip></td>
+                                        <td><MudChip Size="Size.Small" Color="@GetPrioridadColor(inc.Prioridad)">@inc.Prioridad</MudChip></td>
+                                        <td>@inc.FechaReporte.ToString("dd/MM/yyyy")</td>
+                                        <td>@inc.LaboratorioNombre</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                        @if (datosReporte.Incidentes.Count > 10)
+                        {
+                            <MudText Typo="Typo.caption" Class="mt-2">Mostrando 10 de @datosReporte.Incidentes.Count incidentes</MudText>
+                        }
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string? facultadNombre;
+    private int? facultadId;
+    private bool reporteGenerado = false;
+
+    private DateRange? rangoFechas = new DateRange(DateTime.Today.AddMonths(-1), DateTime.Today);
+    private string estadoSeleccionado = "";
+    private string prioridadSeleccionada = "";
+
+    private ReporteData datosReporte = new();
+
+    private class ReporteData
+    {
+        public int Total { get; set; }
+        public int Abiertos { get; set; }
+        public int EnProceso { get; set; }
+        public int Resueltos { get; set; }
+        public List<IncidenteDto> Incidentes { get; set; } = new();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(userIdClaim, out int userId))
+        {
+            var usuario = await UsuarioRepository.GetByIdAsync(userId);
+            if (usuario != null && usuario.FacultadID.HasValue)
+            {
+                facultadId = usuario.FacultadID.Value;
+                facultadNombre = usuario.Facultad?.Nombre ?? "Sin Facultad";
+            }
+        }
+
+        isLoading = false;
+    }
+
+    private async Task GenerarReporte()
+    {
+        if (!facultadId.HasValue) return;
+
+        isLoading = true;
+        reporteGenerado = false;
+
+        try
+        {
+            var incidentes = (await IncidenteService.GetIncidentesByFacultadAsync(facultadId.Value)).ToList();
+
+            // Aplicar filtros
+            if (rangoFechas?.Start != null)
+            {
+                incidentes = incidentes.Where(i => i.FechaCreacion >= rangoFechas.Start).ToList();
+            }
+            if (rangoFechas?.End != null)
+            {
+                incidentes = incidentes.Where(i => i.FechaCreacion <= rangoFechas.End.Value.AddDays(1)).ToList();
+            }
+            if (!string.IsNullOrEmpty(estadoSeleccionado))
+            {
+                incidentes = incidentes.Where(i => i.Estado == estadoSeleccionado).ToList();
+            }
+            if (!string.IsNullOrEmpty(prioridadSeleccionada))
+            {
+                incidentes = incidentes.Where(i => i.Prioridad == prioridadSeleccionada).ToList();
+            }
+
+            datosReporte.Total = incidentes.Count;
+            datosReporte.Abiertos = incidentes.Count(i => i.Estado == "Abierto");
+            datosReporte.EnProceso = incidentes.Count(i => i.Estado == "En Proceso");
+            datosReporte.Resueltos = incidentes.Count(i => i.Estado == "Resuelto" || i.Estado == "Cerrado");
+            datosReporte.Incidentes = incidentes;
+
+            reporteGenerado = true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al generar reporte: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ExportarCSV()
+    {
+        var csv = new StringBuilder();
+        csv.AppendLine("Código,Título,Descripción,Estado,Prioridad,Reportado por,Laboratorio,Fecha Reporte,Fecha Resolución");
+
+        foreach (var inc in datosReporte.Incidentes)
+        {
+            csv.AppendLine($"\"{inc.CodigoIncidente}\",\"{inc.Titulo}\",\"{inc.Descripcion}\",\"{inc.Estado}\",\"{inc.Prioridad}\",\"{inc.EstudianteNombre}\",\"{inc.LaboratorioNombre}\",\"{inc.FechaReporte:dd/MM/yyyy HH:mm}\",\"{inc.FechaResolucion?.ToString("dd/MM/yyyy HH:mm") ?? "N/A"}\"");
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(csv.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        var fileName = $"Reporte_Incidentes_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+
+        await JS.InvokeVoidAsync("downloadFile", fileName, "text/csv", base64);
+    }
+
+    private Color GetEstadoColor(string estado)
+    {
+        return estado switch
+        {
+            "Abierto" => Color.Warning,
+            "En Proceso" => Color.Info,
+            "Resuelto" => Color.Success,
+            "Cerrado" => Color.Default,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetPrioridadColor(string prioridad)
+    {
+        return prioridad switch
+        {
+            "Crítica" => Color.Error,
+            "Alta" => Color.Warning,
+            "Media" => Color.Info,
+            "Baja" => Color.Default,
+            _ => Color.Default
+        };
+    }
+}

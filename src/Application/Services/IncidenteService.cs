@@ -42,6 +42,12 @@ public class IncidenteService : IIncidenteService
         return incidentesAsignados.Select(i => MapToDtoConAsignacion(i, tecnicoId));
     }
 
+    public async Task<IEnumerable<IncidenteDto>> GetIncidentesByFacultadAsync(int facultadId)
+    {
+        var incidentes = await _incidenteRepository.GetByFacultadAsync(facultadId);
+        return incidentes.Select(MapToDto);
+    }
+
     public async Task<IncidenteDto?> GetIncidenteByIdAsync(int id)
     {
         var incidente = await _incidenteRepository.GetByIdAsync(id);

@@ -10,6 +10,7 @@ public interface IIncidenteRepository
     Task<IEnumerable<Incidente>> GetByUsuarioAsync(int usuarioId);
     Task<IEnumerable<Incidente>> GetByEstadoAsync(string estado);
     Task<IEnumerable<Incidente>> GetByLaboratorioAsync(int laboratorioId);
+    Task<IEnumerable<Incidente>> GetByFacultadAsync(int facultadId);
     Task<Incidente> CreateAsync(Incidente incidente);
     Task UpdateAsync(Incidente incidente);
     Task DeleteAsync(int id);

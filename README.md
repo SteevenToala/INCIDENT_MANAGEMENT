@@ -101,9 +101,11 @@ IncidentManagement/
 | Usuario | Email | Contraseña | Rol |
 |---------|-------|------------|-----|
 | Juan Pérez | estudiante1@uni.edu | pass123 | Estudiante |
-| Pedro Morales | admin1@uni.edu | pass123 | Administrativo |
-| Carlos López | lab1@uni.edu | pass123 | Laboratorista (Asignador) |
-| Ana Gómez | lab2@uni.edu | pass123 | Laboratorista (Asignador) |
+| María García | docente1@uni.edu | pass123 | Docente |
+| Pedro Morales | admin1@uni.edu | pass123 | Administrativo (Coordinador) |
+| Carlos López | lab1@uni.edu | pass123 | Laboratorista Supervisor (EsAsignador = 1) |
+| Ana Gómez | lab2@uni.edu | pass123 | Laboratorista Supervisor (EsAsignador = 1) |
+| Roberto Díaz | lab3@uni.edu | pass123 | Laboratorista Técnico |
 
 ## 📁 Estructura del Proyecto
 
@@ -159,25 +161,39 @@ IncidentManagement/
 - Consultar base de conocimientos
 - Recibir notificaciones
 
-### Personal Administrativo
-- Dashboard administrativo
-- Reportar incidentes
-- Ver estado de incidentes
+### Personal Administrativo (Coordinador/Analista)
+- **Dashboard con estadísticas** de su facultad
+  - Total de incidentes, abiertos, en proceso, resueltos
+  - Métricas: tiempo promedio de resolución, tasa de resolución
+  - Estadísticas por prioridad
+- **Ver todos los incidentes** de su facultad (no solo los propios)
+- **Filtros avanzados**: estado, prioridad, laboratorio, búsqueda
+- **Ver detalles completos** de cualquier incidente
+- **Generar reportes**: Exportar a CSV/Excel
 - Consultar base de conocimientos
-- Gestionar incidentes de su facultad
+- **Rol de monitoreo**: NO asigna ni resuelve técnicamente
 
-### Laboratorista
-- Dashboard de trabajo
-- Ver incidentes asignados
-- Actualizar estado de incidentes
-- Registrar soluciones en base de conocimientos
+### Laboratorista (Técnico)
+- Dashboard de trabajo personal
+- Ver **MIS incidentes asignados**
+- Aceptar/rechazar asignaciones
+- Trabajar y resolver incidentes
+- Actualizar estados técnicos (En Progreso, Resuelto, Cerrado)
+- Crear soluciones en base de conocimientos
 - Consultar base de conocimientos
-- **Laboratorista Asignador**: Asignar incidentes a otros técnicos
+
+### Laboratorista Supervisor (EsAsignador = 1)
+- **TODO lo del Laboratorista Técnico** +
+- **Asignar incidentes** a técnicos de su facultad
+- **Reasignar** cuando sea necesario
+- Ver **carga de trabajo** de todos los técnicos
+- Supervisar desempeño del equipo
+- Coordinar distribución de tareas
 
 ## 🔄 Flujo de Trabajo
 
 1. **Usuario reporta incidente** → Sistema genera código único
-2. **Laboratorista Asignador** → Asigna incidente a técnico apropiado
+2. **Laboratorista Supervisor** → Asigna incidente a técnico apropiado
 3. **Laboratorista** → Atiende incidente, cambia estado
 4. **Resolución** → Laboratorista registra solución en base de conocimientos
 5. **Cierre** → Incidente marcado como resuelto/cerrado

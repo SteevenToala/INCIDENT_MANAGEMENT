@@ -91,6 +91,24 @@ public class IncidenteRepository : IIncidenteRepository
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<Incidente>> GetByFacultadAsync(int facultadId)
+    {
+        return await _context.Incidentes
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(i => i.Computadora)
+                .ThenInclude(c => c.Laboratorio)
+            .Include(i => i.UsuarioReportador)
+                .ThenInclude(u => u.Rol)
+            .Include(i => i.Laboratorio)
+            .Include(i => i.Facultad)
+            .Include(i => i.Asignaciones)
+                .ThenInclude(a => a.UsuarioAsignado)
+            .Where(i => i.FacultadID == facultadId && !i.Eliminado)
+            .OrderByDescending(i => i.FechaCreacion)
+            .ToListAsync();
+    }
+
     public async Task<Incidente> CreateAsync(Incidente incidente)
     {
         _context.Incidentes.Add(incidente);
