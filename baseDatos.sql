@@ -336,7 +336,7 @@ VALUES
 ('admin1@uni.edu', 'Pedro Morales', 'pass123', 3, 1, 0),
 ('lab1@uni.edu', 'Carlos López', 'pass123', 4, 1, 1),
 ('lab2@uni.edu', 'Ana Gómez', 'pass123', 4, 2, 1),
-('lab3@uni.edu', 'Roberto Díaz', 'pass123', 4, 1, 0);
+('lab3@uni.edu', 'Roberto Díaz', 'pass123', 4, 1, 0);--USUARIO 
 GO
 
 -- =========================
