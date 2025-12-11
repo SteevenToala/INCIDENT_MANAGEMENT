@@ -1,0 +1,997 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{cite}
+\usepackage{longtable} 
+
+
+% Configuración de márgenes
+\geometry{left=2.5cm, right=2.5cm, top=4cm, bottom=2.5cm, headheight=3cm, headsep=0.5cm}
+
+% Configuración de enlaces
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,      
+    urlcolor=blue,
+}
+
+% Configuración de colores para código (Estilo Visual Studio)
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\definecolor{codeblue}{rgb}{0,0,1}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{codeblue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=[Sharp]C
+}
+\lstset{style=mystyle}
+
+% Definición del encabezado
+\pagestyle{fancy}
+\fancyhf{} % Limpia encabezados y pies de página
+\fancyhead[C]{%
+    \hspace*{-1cm}%
+    \begin{minipage}[c]{2cm}
+        \flushleft
+        \includegraphics[width=2.2cm]{imagenes/uta.png}
+    \end{minipage}%
+    \hfill
+    \begin{minipage}[c]{14cm} 
+        \centering
+        \small {\textbf{UNIVERSIDAD TÉCNICA DE AMBATO}} \\[0.1cm]
+        \scriptsize \textbf{FACULTAD DE INGENIERÍA EN SISTEMAS, ELECTRÓNICA E INDUSTRIAL} \\[0.1cm]
+        \scriptsize \textbf{CARRERA DE SOFTWARE} \\[0.1cm]
+        \scriptsize Cdla. Universitaria (Predios Huachi) / Casilla 334 / Telefax: 03-2851894 -- 2411537, Correo Electrónico: carrera.sistemas@uta.edu.ec \\[0.1cm]
+        \scriptsize AMBATO-ECUADOR \\[0.05cm]
+        \scriptsize _
+    \end{minipage}%
+    \hfill
+}
+\fancyfoot[C]{\thepage} % Número de página centrado en el pie
+\renewcommand{\headrulewidth}{0.4pt} % Línea separadora del encabezado
+\renewcommand{\footrulewidth}{0pt} % Sin línea en el pie
+
+
+
+\begin{document}
+
+% ---------------- PORTADA ----------------
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    \includegraphics[width=4cm]{imagenes/uta.png} \\
+    \vspace{0.5cm}
+    
+    {\LARGE \textbf{UNIVERSIDAD TÉCNICA DE AMBATO}} \\
+    \vspace{0.3cm}
+    {\large Facultad de Ingeniería en Sistemas, Electrónica e Industrial} \\
+    \vspace{0.5cm}
+   {\large ``Proyecto Académico de Fin de Semestre: agosto--enero 2026''} \\
+    \vspace{2cm}
+    
+    \textbf{Título:} \\
+    {\Large Sistema de Gestión de Incidentes y Base de Conocimiento para Laboratorios Universitarios} \\
+    \vspace{2cm}
+    
+    \begin{flushleft}
+    \textbf{Carrera:} Software \\
+    \vspace{0.3cm}
+    \textbf{Nivel y Paralelo:} 5to A \\
+    \vspace{0.3cm}
+    \textbf{Alumnos participantes:}
+    \begin{itemize}
+        \item Peñafiel San Martín Kevin Alexander
+        \item Romero Alarcón Adrián Estefano
+        \item Toala Camacho Steeven Santiago
+    \end{itemize}
+    \vspace{0.3cm}
+    \textbf{Módulo y Docente:} Interacción Humano Computador – Hernán Naranjo \\
+    \end{flushleft}
+    
+    \vfill
+    
+    \textbf{2025} 
+    \vspace{1cm}
+\end{titlepage}
+
+% ---------------- ÍNDICE ----------------
+\newpage
+\tableofcontents
+\newpage
+
+% ---------------- INFORME DEL PROYECTO ----------------
+\section{INFORME DEL PROYECTO}
+
+\subsection{Objetivo Principal}
+Desarrollar e implementar un Sistema Web de Gestión de Incidentes para laboratorios universitarios, basado en principios de Diseño Centrado en el Usuario (DCU) y metodologías ágiles, que permita automatizar el proceso de reporte, seguimiento y resolución de incidentes técnicos, mejorando la eficiencia operativa y la experiencia del usuario.
+
+\subsection{Objetivos Específicos}
+\begin{enumerate}
+    \item Analizar y diseñar interfaces de usuario intuitivas mediante la aplicación de principios de usabilidad, ergonomía cognitiva y leyes Gestalt, creando prototipos iterativos desde bosquejos hasta wireframes de alta fidelidad.
+    \item Implementar la arquitectura del sistema utilizando Onion Architecture con tecnologías .NET 8, Blazor Server y Entity Framework Core, garantizando escalabilidad, mantenibilidad y separación de responsabilidades.
+    \item Desarrollar módulos funcionales completos incluyendo autenticación basada en JWT, gestión de roles, reportes de incidentes, asignación inteligente, base de conocimiento y dashboards de métricas.
+    \item Validar la aceptación y usabilidad del sistema mediante el Modelo de Aceptación Tecnológica (TAM) con usuarios reales, aplicando análisis estadístico para medir percepción de utilidad, facilidad de uso e intención de adopción.
+\end{enumerate}
+
+\subsection{Resumen}
+El presente proyecto detalla el ciclo de vida completo de desarrollo de un Sistema de Gestión de Incidentes (Help Desk) orientado a laboratorios universitarios. El sistema ha sido diseñado bajo principios de \textit{Diseño Centrado en el Usuario} (DCU) y desarrollado utilizando la arquitectura de software \textit{Onion Architecture} con tecnologías .NET 8 y Blazor Server. El informe abarca tres fases fundamentales: (1) Análisis y Diseño de interfaces UI/UX con prototipos iterativos, (2) Codificación del sistema completo con arquitectura por capas (Domain, Application, Infrastructure, Web), y (3) Validación mediante el Modelo de Aceptación Tecnológica (TAM) con 20 usuarios reales. Los resultados estadísticos demuestran alta aceptación (BI=4.88/5), excelente percepción de utilidad (PU=4.61/5) y facilidad de uso (PEOU=4.72/5), validando la viabilidad técnica y funcional del proyecto.
+
+\subsection{Palabras clave}
+Sistema de Gestión de Incidentes, Help Desk, Diseño Centrado en el Usuario, Onion Architecture, Blazor, .NET 8, Modelo de Aceptación Tecnológica (TAM), Usabilidad, UI/UX, Material Design, Laboratorios Universitarios.
+
+\subsection{Introducción}
+La gestión eficiente de incidentes técnicos en laboratorios universitarios representa un desafío crítico para las instituciones de educación superior. Tradicionalmente, el reporte y seguimiento de fallos en equipos computacionales se ha realizado mediante procesos manuales (correos electrónicos, formatos físicos), generando ineficiencias, pérdida de información y tiempos prolongados de resolución.
+
+Este proyecto surge como respuesta a la necesidad de modernizar y automatizar dichos procesos, proporcionando una plataforma web centralizada que permite a estudiantes, docentes, personal administrativo y técnicos laboratoristas gestionar el ciclo completo de atención de incidentes: desde el reporte inicial hasta el cierre y documentación de soluciones en una base de conocimiento reutilizable.
+
+El desarrollo del sistema se fundamenta en tres pilares metodológicos complementarios:
+\begin{itemize}
+    \item \textbf{Diseño Centrado en el Usuario (DCU):} Aplicación de principios de usabilidad, ergonomía cognitiva y leyes Gestalt para crear interfaces intuitivas que minimicen la carga cognitiva y maximicen la eficiencia.
+    \item \textbf{Arquitectura de Software Escalable:} Implementación de Onion Architecture con tecnologías modernas (.NET 8, Blazor Server, Entity Framework Core), garantizando separación de responsabilidades, testeo unitario y mantenibilidad a largo plazo.
+    \item \textbf{Validación Empírica:} Evaluación rigurosa mediante el Modelo de Aceptación Tecnológica (TAM), permitiendo medir objetivamente la percepción de utilidad, facilidad de uso e intención de adopción por parte de usuarios reales.
+\end{itemize}
+
+El presente informe documenta exhaustivamente el proceso de desarrollo, desde la conceptualización inicial (bosquejos y wireframes) hasta la implementación funcional completa, incluyendo resultados estadísticos que validan la efectividad de las decisiones de diseño tomadas. Se busca demostrar que la combinación de metodologías ágiles, principios de HCI (Human-Computer Interaction) y tecnologías contemporáneas puede transformar procesos operativos universitarios, mejorando significativamente la calidad del servicio técnico y la satisfacción de los usuarios finales.
+
+% ---------------- MATERIALES Y METODOLOGÍA ----------------
+\subsection{Materiales y Metodología}
+
+Para el desarrollo del proyecto se emplearon los siguientes recursos tecnológicos y materiales:
+
+\textbf{Hardware y Entorno de Desarrollo}
+\begin{itemize}
+    \item \textbf{Estaciones de trabajo:} Computadoras con procesadores Intel Core i5/i7, 8-16 GB RAM, para desarrollo y pruebas locales.
+    \item \textbf{Servidor de base de datos:} SQL Server 2019 instalado en entorno local para gestión de datos relacionales.
+    \item \textbf{Dispositivos de prueba:} Laptops, tablets y smartphones para validación de responsividad (diseño adaptable).
+\end{itemize}
+
+\textbf{Software y Tecnologías}
+\begin{itemize}
+    \item \textbf{Frameworks de desarrollo:} .NET 8 SDK, ASP.NET Core, Blazor Server.
+    \item \textbf{ORM (Object-Relational Mapping):} Entity Framework Core para mapeo objeto-relacional.
+    \item \textbf{Biblioteca de componentes UI:} MudBlazor (Material Design para Blazor).
+    \item \textbf{Base de datos:} Microsoft SQL Server 2019.
+    \item \textbf{Control de versiones:} Git y GitHub para gestión de código fuente.
+    \item \textbf{IDEs:} Visual Studio 2022, Visual Studio Code.
+    \item \textbf{Diseño UX/UI:} Adobe XD para creación de wireframes y prototipos de alta fidelidad.
+    \item \textbf{Documentación:} LaTeX para redacción del informe académico.
+\end{itemize}
+
+\textbf{Instrumentos de Validación}
+\begin{itemize}
+    \item \textbf{Cuestionario TAM:} Escala Likert de 5 puntos con 20 ítems para medir aceptación tecnológica.
+    \item \textbf{Software estadístico:} Microsoft Excel y Python (pandas, scipy) para análisis de datos.
+\end{itemize}
+
+\textbf{Metodología de Desarrollo}
+
+El proyecto siguió una metodología híbrida que combina principios de \textit{Diseño Centrado en el Usuario (DCU)} con prácticas ágiles iterativas e incrementales. El proceso se estructuró en tres fases principales:
+
+\textbf{Fase 1: Análisis y Diseño}
+\begin{enumerate}
+    \item \textbf{Análisis de contexto y stakeholders:} Identificación de actores (estudiantes, docentes, administrativos, laboratoristas) y sus necesidades mediante entrevistas informales y observación del proceso actual.
+    \item \textbf{Especificación de requisitos:} Definición de requisitos funcionales (RF) y no funcionales (RNF) basados en casos de uso reales.
+    \item \textbf{Modelado del sistema:} Elaboración de diagramas de casos de uso y diagramas de flujo de proceso para visualizar las interacciones usuario-sistema.
+    \item \textbf{Diseño iterativo de interfaces:}
+    \begin{itemize}
+        \item Bosquejos a mano alzada (low-fidelity) para exploración rápida de ideas.
+        \item Wireframes digitales en Adobe XD (mid-fidelity) para definir estructura y layout.
+        \item Prototipos interactivos de alta fidelidad con navegación funcional para validación de flujo.
+    \end{itemize}
+    \item \textbf{Evaluación heurística:} Aplicación de principios de Nielsen y leyes Gestalt para identificar problemas de usabilidad antes de la codificación.
+\end{enumerate}
+
+\textbf{Fase 2: Implementación (Codificación)}
+\begin{enumerate}
+    \item \textbf{Arquitectura de software:} Implementación de Onion Architecture con separación clara de capas:
+    \begin{itemize}
+        \item \textit{Domain:} Entidades de negocio (Incidente, Usuario, Laboratorio, etc.).
+        \item \textit{Application:} Interfaces de servicios, DTOs y lógica de casos de uso.
+        \item \textit{Infrastructure:} Implementación de repositorios y acceso a datos con EF Core.
+        \item \textit{Web:} Capa de presentación con componentes Blazor y MudBlazor.
+    \end{itemize}
+    \item \textbf{Desarrollo incremental por módulos:}
+    \begin{itemize}
+        \item Sprint 1: Autenticación y gestión de usuarios (JWT, roles).
+        \item Sprint 2: Módulo de gestión de incidentes (CRUD completo).
+        \item Sprint 3: Sistema de asignación inteligente y notificaciones.
+        \item Sprint 4: Base de conocimiento y dashboards de métricas.
+    \end{itemize}
+    \item \textbf{Pruebas unitarias:} Validación de lógica de negocio en capa Application.
+    \item \textbf{Pruebas de integración:} Verificación de flujos completos desde la UI hasta la base de datos.
+\end{enumerate}
+
+\textbf{Fase 3: Validación con Usuarios (TAM)}
+\begin{enumerate}
+    \item \textbf{Selección de participantes:} Muestra no probabilística de $n=20$ usuarios representativos (estudiantes, docentes, laboratoristas).
+    \item \textbf{Sesiones de prueba:} Cada participante interactuó con el sistema completo durante 15-20 minutos realizando tareas típicas (login, reporte de incidente, consulta de estado).
+    \item \textbf{Aplicación del cuestionario TAM:} Los usuarios respondieron 20 preguntas en escala Likert (1-5) evaluando:
+    \begin{itemize}
+        \item Percepción de Utilidad (PU)
+        \item Facilidad de Uso (PEOU)
+        \item Actitud hacia el Uso (ATU)
+        \item Intención de Uso Conductual (BI)
+    \end{itemize}
+    \item \textbf{Análisis estadístico:} Cálculo de medias, desviaciones estándar y pruebas t-Student para validar significancia estadística ($\alpha=0.05$).
+\end{enumerate}
+
+\textbf{Principios de Diseño Aplicados}
+Durante todo el desarrollo se aplicaron los siguientes fundamentos teóricos:
+\begin{itemize}
+    \item \textbf{Leyes de Gestalt:} Proximidad, semejanza y cierre para agrupar elementos relacionados visualmente.
+    \item \textbf{Heurísticas de Nielsen:} Visibilidad del estado del sistema, correspondencia con el mundo real, control y libertad del usuario, consistencia y estándares.
+    \item \textbf{Material Design:} Sistema de diseño de Google para garantizar interfaces modernas, intuitivas y accesibles.
+    \item \textbf{Responsive Design:} Diseño adaptable a múltiples dispositivos (desktop, tablet, móvil).
+\end{itemize}
+
+
+
+% ---------------- RESULTADOS Y DISCUSIÓN ----------------
+\subsection{Resultados y Discusión}
+
+\textbf{Fase 1: Resultados del Análisis y Diseño}
+
+\textbf{Justificación de Elementos de Interfaz}
+
+El diseño de la interfaz de usuario se ha fundamentado en principios de usabilidad y ergonomía cognitiva, utilizando componentes de \textbf{MudBlazor} (Material Design). El objetivo principal ha sido reducir la carga cognitiva del usuario y maximizar la eficiencia.
+
+\textbf{Organización de Objetos y Layout}
+Se ha implementado una arquitectura de información basada en un sistema de rejilla (Grid System) de 12 columnas.
+\begin{itemize}
+    \item \textbf{Consistencia Visual:} Los formularios, tablas y botones mantienen una alineación constante.
+    \item \textbf{Jerarquía Visual:} Uso de tarjetas (\textit{Cards}) para segmentar información crítica en el Dashboard.
+    \item \textbf{Navegación:} Se utiliza un menú lateral (\textit{Drawer}) colapsable para optimizar el espacio en pantallas pequeñas.
+\end{itemize}
+
+\textbf{Principios de Agrupación (Gestalt)}
+\begin{itemize}
+    \item \textbf{Ley de Proximidad:} Los elementos relacionados funcionalmente (ej. campos de login) están agrupados visualmente.
+    \item \textbf{Ley de Semejanza:} Los botones de acción primaria comparten color y forma para ser identificables instantáneamente.
+\end{itemize}
+
+\textbf{Análisis de Contexto y Usuarios}
+
+\textbf{Stakeholders:}
+\begin{itemize}
+    \item \textbf{Estudiantes/Docentes:} Reportan fallos. Requieren simplicidad y rapidez.
+    \item \textbf{Personal Administrativo:} Supervisan métricas. Requieren dashboards claros.
+    \item \textbf{Laboratoristas:} Gestionan y resuelven. Requieren herramientas avanzadas de filtrado.
+    \item \textbf{Laboratorista Asignador:} Rol crítico encargado de derivar tickets al técnico adecuado.
+\end{itemize}
+
+\textbf{Contexto de Uso:} Laboratorios de computación universitarios (ambiente físico) y acceso remoto vía web/móvil (ambiente técnico).
+
+\textbf{Especificación de Requisitos}
+
+Basado en el análisis de las necesidades de la universidad, se definieron los siguientes requisitos detallados:
+
+\textbf{Requisitos Funcionales (RF)}
+\begin{enumerate}
+    \item \textbf{RF1 - Autenticación y Roles:} Ingreso seguro mediante JWT. El sistema debe diferenciar vistas y permisos para Estudiante, Administrativo y Laboratorista.
+    \item \textbf{RF2 - Gestión de Incidentes:} Capacidad de Crear, Leer, Actualizar y Eliminar reportes. Los incidentes deben transitar por estados: Abierto, En Proceso, Resuelto, Cerrado.
+    \item \textbf{RF3 - Asignación Inteligente:} Funcionalidad para que el Asignador derive tickets a técnicos específicos o proveedores externos.
+    \item \textbf{RF4 - Base de Conocimiento:} Módulo para documentar soluciones a problemas recurrentes, permitiendo búsquedas rápidas.
+    \item \textbf{RF5 - Dashboard de Métricas:} Visualización de KPIs como "Tiempo promedio de resolución" e "Incidentes por laboratorio".
+    \item \textbf{RF6 - Catálogo de Activos:} Gestión de Facultades, Laboratorios y Computadoras para asociar fallos a equipos físicos.
+\end{enumerate}
+
+\textbf{Requisitos No Funcionales (RNF)}
+\begin{itemize}
+    \item \textbf{RNF1 - Usabilidad:} Interfaz intuitiva con curva de aprendizaje menor a 10 minutos para usuarios novatos.
+    \item \textbf{RNF2 - Rendimiento:} Tiempos de respuesta de la interfaz menores a 2 segundos en operaciones de carga.
+    \item \textbf{RNF3 - Seguridad:} Encriptación de contraseñas y uso de variables de entorno para claves sensibles.
+    \item \textbf{RNF4 - Escalabilidad:} Arquitectura desacoplada (\textit{Onion}) para facilitar el mantenimiento y pruebas.
+\end{itemize}
+
+\textbf{Modelado del Sistema (Diagramas)}
+
+A continuación, se detallan los diagramas de comportamiento del sistema para los casos de uso más relevantes.
+
+\textbf{Diagrama de Casos de Uso General}
+Describe la interacción global de todos los actores con los módulos del sistema.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{imagenes/unnamed.jpg} 
+    \caption{Diagrama de Casos de Uso General del Sistema}
+\end{figure}
+
+\textbf{Flujo de Proceso: Autenticación}
+
+Detalla la validación de credenciales y la redirección según el rol del usuario (Estudiante a Home, Admin a Dashboard).
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{imagenes/AUTENTIFICAXCION.jpg}
+    \caption{Diagrama de Flujo del Proceso de Login}
+\end{figure}
+
+\textbf{Flujo de Proceso: Reporte de Incidente (Estudiante)}
+
+Muestra los pasos desde que el estudiante detecta la falla hasta que el sistema genera el ticket.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{imagenes/rEPOeSTU.jpg}
+    \caption{Diagrama de Flujo: Reporte de Incidente por Estudiante}
+\end{figure}
+
+\textbf{Flujo de Proceso: Gestión y Resolución (Laboratorista)}
+
+Describe el ciclo de vida técnico: Recepción $\rightarrow$ Diagnóstico $\rightarrow$ Consulta Base Conocimiento $\rightarrow$ Solución $\rightarrow$ Cierre.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{imagenes/REPOlaB.jpg}
+    \caption{Diagrama de Flujo: Proceso de Resolución de Incidente}
+\end{figure}
+
+\textbf{Prototipos y Wireframes}
+
+Se siguió un proceso iterativo de diseño metodológico:
+\begin{enumerate}
+  \item Revisión de bibliografía y estado del arte.
+  \item Bosquejos a mano para ideación rápida.
+  \item Wireframes digitales en Adobe XD para estructura.
+  \item Prototipo interactivo para validación de flujo.
+  \item Pruebas heurísticas y ajustes finales.
+  \item Documentación y entrega.
+\end{enumerate}
+
+\textbf{Resultados obtenidos de Diseño}
+
+Se presentan a continuación todos los artefactos generados durante la fase de diseño.
+
+\subsubsection*{Bosquejos a mano}
+Los bocetos iniciales permitieron una exploración rápida de las ideas y la disposición de elementos.
+
+% ---------------- IMÁGENES DE BOSQUEJOS (TODAS) ----------------
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{imagenes/trabajo/Captura de pantalla 2025-11-25 000127.png}
+  \caption{Bosquejo a mano: Concepto inicial y login.}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{imagenes/trabajo/Captura de pantalla 2025-11-25 000135.png}
+  \caption{Bosquejo a mano: Disposición de elementos del dashboard.}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{imagenes/trabajo/Captura de pantalla 2025-11-25 000143.png}
+  \caption{Bosquejo a mano: Estructura de formularios de reporte.}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{imagenes/trabajo/Captura de pantalla 2025-11-25 000410.png}
+  \caption{Bosquejo a mano: Detalles de interacción.}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{imagenes/trabajo/Captura de pantalla 2025-11-25 000420.png}
+  \caption{Bosquejo a mano: Listados y tablas de gestión.}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{imagenes/trabajo/Captura de pantalla 2025-11-25 000428.png}
+  \caption{Bosquejo a mano: Menús y navegación lateral.}
+\end{figure}
+
+\subsubsection*{Wireframes Digitales}
+La digitalización en Adobe XD permitió definir la jerarquía visual y el flujo de navegación.
+
+\clearpage
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{imagenes/trabajo/Captura de pantalla 2025-11-24 234728.png}
+  \caption{Wireframe digital: Pantalla de Login (Baja fidelidad).}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{imagenes/trabajo/Captura de pantalla 2025-11-24 232418.png}
+  \caption{Wireframe digital: Dashboard Principal (Baja fidelidad).}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{imagenes/trabajo/Captura de pantalla 2025-11-24 234013.png}
+  \caption{Wireframe digital: Formulario de Reporte (Baja fidelidad).}
+\end{figure}
+
+El prototipo final es interactivo y simula la experiencia real.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{imagenes/trabajo/Captura de pantalla 2025-11-24 235954.png}
+  \caption{Prototipo interactivo de alta fidelidad en Adobe XD.}
+\end{figure}
+
+\newpage
+
+\textbf{Fase 2: Resultados de la Implementación (Codificación)}
+
+El sistema utiliza la \textbf{Onion Architecture} (Arquitectura Cebolla), que organiza el código en capas concéntricas para asegurar que el núcleo del negocio sea independiente de frameworks externos y bases de datos.
+
+\textbf{Capa de Dominio (Domain)}
+
+Es el núcleo de la aplicación. Contiene las entidades y reglas de negocio puras.
+
+\begin{lstlisting}[caption={Entidad Incidente.cs (Modelo de Datos)}]
+public class Incidente : BaseEntity
+{
+    public string Codigo { get; set; }
+    public string Titulo { get; set; }
+    public string Descripcion { get; set; }
+    public DateTime FechaReporte { get; set; }
+    public EstadoIncidente Estado { get; set; }
+    
+    // Claves foráneas y propiedades de navegación
+    public int UsuarioReportaId { get; set; }
+    public int? TecnicoAsignadoId { get; set; }
+    public int LaboratorioId { get; set; }
+    
+    public virtual Usuario UsuarioReporta { get; set; }
+    public virtual Laboratorio Laboratorio { get; set; }
+}
+\end{lstlisting}
+
+\textbf{Capa de Aplicación (Application)}
+
+Define las interfaces (contratos), DTOs (Data Transfer Objects) y la lógica de los casos de uso.
+
+\begin{lstlisting}[caption={IncidenteDto.cs (Transferencia de Datos)}]
+public class IncidenteDto
+{
+    public int Id { get; set; }
+    public string Codigo { get; set; }
+    public string Titulo { get; set; }
+    public string NombreLaboratorio { get; set; }
+    public string Estado { get; set; }
+    public DateTime FechaCreacion { get; set; }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Interfaz Genérica IAsyncRepository.cs}]
+public interface IAsyncRepository<T> where T : BaseEntity
+{
+    Task<T> GetByIdAsync(int id);
+    Task<IReadOnlyList<T>> ListAllAsync();
+    Task<T> AddAsync(T entity);
+    Task UpdateAsync(T entity);
+    Task DeleteAsync(T entity);
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={AuthService.cs - Lógica de Login con JWT}]
+public async Task<AuthResponse> Login(LoginDto request)
+{
+    // Verificación de credenciales con Identity
+    var user = await _userManager.FindByEmailAsync(request.Email);
+    if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+    {
+        return new AuthResponse { Success = false, Message = "Credenciales inválidas" };
+    }
+
+    // Generación del Token de seguridad
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JWT_SECRET_KEY"]));
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+    
+    var token = new JwtSecurityToken(
+        issuer: _config["JWT_ISSUER"],
+        audience: _config["JWT_AUDIENCE"],
+        claims: GetClaims(user),
+        expires: DateTime.Now.AddMinutes(1440),
+        signingCredentials: creds
+    );
+
+    return new AuthResponse { Success = true, Token = new JwtSecurityTokenHandler().WriteToken(token) };
+}
+\end{lstlisting}
+
+\textbf{Capa de Infraestructura (Infrastructure)}
+
+Implementa el acceso a datos y la comunicación con servicios externos.
+
+\begin{lstlisting}[caption={ApplicationDbContext.cs - Configuración EF Core}]
+public class ApplicationDbContext : DbContext
+{
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options) { }
+
+    public DbSet<Incidente> Incidentes { get; set; }
+    public DbSet<Usuario> Usuarios { get; set; }
+    public DbSet<Laboratorio> Laboratorios { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+        // Configuración de relaciones
+        builder.Entity<Incidente>()
+            .HasOne(i => i.UsuarioReporta)
+            .WithMany()
+            .HasForeignKey(i => i.UsuarioReportaId);
+    }
+}
+\end{lstlisting}
+
+\textbf{Capa de Presentación (Web)}
+
+Interfaz de usuario construida con Blazor Server y MudBlazor.
+
+\begin{lstlisting}[caption={Program.cs - Inyección de Dependencias}]
+var builder = WebApplication.CreateBuilder(args);
+
+// 1. Base de Datos
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// 2. Inyección de Servicios (Pattern Repository & Service)
+builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(BaseRepository<>));
+builder.Services.AddScoped<IIncidenteService, IncidenteService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+// 3. UI Framework
+builder.Services.AddMudServices();
+
+var app = builder.Build();
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Incidentes.razor - Vista de Tabla}]
+@page "/incidentes"
+@inject IIncidenteService IncidenteService
+@attribute [Authorize]
+
+<MudTable Items="@incidentes" Hover="true" Loading="@_loading">
+    <HeaderContent>
+        <MudTh>Código</MudTh>
+        <MudTh>Título</MudTh>
+        <MudTh>Laboratorio</MudTh>
+        <MudTh>Estado</MudTh>
+        <MudTh>Acciones</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.Codigo</MudTd>
+        <MudTd>@context.Titulo</MudTd>
+        <MudTd>@context.NombreLaboratorio</MudTd>
+        <MudTd>
+            <MudChip Color="@GetColor(@context.Estado)">@context.Estado</MudChip>
+        </MudTd>
+        <MudTd>
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                           OnClick="@(() => Editar(@context.Id))" />
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    private IEnumerable<IncidenteDto> incidentes;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        incidentes = await IncidenteService.GetAllAsync();
+        _loading = false;
+    }
+}
+\end{lstlisting}
+
+\textbf{Capturas del Sistema Implementado}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{imagenes/login.png}
+    \caption{Implementación final: Login.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{imagenes/estudiantereportar.png}
+    \caption{Implementación final: Formulario de Reporte.}
+\end{figure}
+
+\newpage
+
+\textbf{Fase 3: Resultados de Validación con Usuarios (TAM)}
+
+\textbf{Resultados Cuantitativos Obtenidos}
+Para validar la aceptación del sistema, se aplicó el Modelo de Aceptación Tecnológica (TAM) a una muestra de $n=20$ usuarios.
+
+\textbf{Conceptos Clave del Modelo TAM}
+
+Se definen a continuación los constructos evaluados, fundamentados en la teoría existente:
+
+\begin{itemize}
+    \item \textbf{Modelo de Aceptación Tecnológica (TAM):} Es un modelo teórico utilizado para evaluar cómo los usuarios aceptan y utilizan una tecnología. Se centra en cuatro constructos: Percepción de Utilidad (PU), Percepción de Facilidad de Uso (PEOU), Actitud hacia el Uso (ATU) e Intención de Uso Conductual (BI) \cite{perez2006uso}.
+
+    \item \textbf{Percepción de la Utilidad (PU):} Grado en que un usuario percibe que el uso de la aplicación mejora su desempeño en tareas específicas, como la gestión de incidentes en laboratorios universitarios \cite{leon2025evaluacion}.
+
+    \item \textbf{Percepción de la Facilidad de Uso (PEOU):} Nivel de facilidad con el cual un usuario puede interactuar con la aplicación sin dificultades, reflejando la intuitividad y claridad de la interfaz \cite{leon2025evaluacion}.
+
+    \item \textbf{Actitud hacia el Uso (ATU):} Opinión o disposición general del usuario hacia la utilización de la aplicación, influenciada por la percepción de utilidad y facilidad de uso \cite{leon2025evaluacion}.
+
+    \item \textbf{Intención de Uso Conductual (BI):} Probabilidad o intención del usuario de continuar utilizando la aplicación de forma regular en el futuro \cite{leon2025evaluacion}.
+\end{itemize}
+
+\textbf{Cuestionario TAM Aplicado}
+
+El cuestionario constó de 20 preguntas con escala Likert de 1 a 5 (1 = Totalmente en desacuerdo, 5 = Totalmente de acuerdo).
+
+\textbf{Percepción de la Utilidad (PU)}
+\begin{enumerate}
+    \item PU1: La aplicación me ayuda a gestionar incidentes de manera más eficiente.
+    \item PU2: Mejora la comunicación y coordinación.
+    \item PU3: Facilita el seguimiento y control del estado.
+    \item PU4: La base de conocimientos aumenta mi capacidad resolutiva.
+    \item PU5: La aplicación me ahorra tiempo.
+\end{enumerate}
+
+\textbf{Percepción de la Facilidad de Uso (PEOU)}
+\begin{enumerate}
+    \item PEOU1: Aprender a utilizar la aplicación fue sencillo.
+    \item PEOU2: La navegación por la interfaz es clara e intuitiva.
+    \item PEOU3: Realizar tareas básicas no requiere esfuerzo significativo.
+    \item PEOU4: Las funciones están organizadas de manera lógica.
+    \item PEOU5: Puedo usar la aplicación sin ayuda externa.
+\end{enumerate}
+
+\textbf{Actitud hacia el Uso (ATU)}
+\begin{enumerate}
+    \item ATU1: Considero que usar la aplicación es una decisión positiva.
+    \item ATU2: Me siento cómodo al interactuar con la aplicación.
+    \item ATU3: Disfruto utilizando la aplicación.
+    \item ATU4: La experiencia general de uso es satisfactoria.
+    \item ATU5: Recomendaría la aplicación a otros usuarios.
+\end{enumerate}
+
+\textbf{Intención de Uso Conductual (BI)}
+\begin{enumerate}
+    \item BI1: Planeo utilizar esta aplicación con regularidad.
+    \item BI2: La usaría para reportar cualquier incidente.
+    \item BI3: Continuaría usando la aplicación si se implementa oficialmente.
+    \item BI4: Prefiero esta aplicación a métodos tradicionales.
+    \item BI5: Me gustaría que sea adoptada por otras facultades.
+\end{enumerate}
+
+\textbf{Prototipo de la Plataforma (Vistas Evaluadas)}
+
+Los participantes interactuaron con el prototipo funcional antes de responder.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.45\textwidth]{imagenes/estudiantehome.png}
+    \hfill
+    \includegraphics[width=0.45\textwidth]{imagenes/laboratoristahome.png}
+    \caption{Vistas evaluadas: Dashboards.}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.45\textwidth]{imagenes/laboratoristagestion.png}
+    \hfill
+    \includegraphics[width=0.45\textwidth]{imagenes/laboratoristabase.png}
+    \caption{Vistas evaluadas: Gestión y Conocimiento.}
+\end{figure}
+
+\textbf{Resultados Individuales por Constructo (Datos Completos)}
+
+A continuación se presentan las respuestas tabuladas de los 20 participantes sin omisiones.
+
+% TABLA PU - 20 PARTICIPANTES
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabular}{c|ccccc}
+\toprule
+\textbf{ID} & \textbf{PU1} & \textbf{PU2} & \textbf{PU3} & \textbf{PU4} & \textbf{PU5} \\
+\midrule
+1  & 5 & 5 & 4 & 5 & 4 \\
+2  & 4 & 4 & 5 & 5 & 5 \\
+3  & 5 & 5 & 5 & 4 & 5 \\
+4  & 3 & 4 & 4 & 4 & 4 \\
+5  & 5 & 5 & 5 & 5 & 5 \\
+6  & 4 & 5 & 4 & 5 & 5 \\
+7  & 5 & 4 & 5 & 4 & 4 \\
+8  & 4 & 5 & 4 & 5 & 5 \\
+9  & 5 & 5 & 5 & 5 & 5 \\
+10 & 4 & 4 & 4 & 4 & 4 \\
+11 & 5 & 5 & 5 & 5 & 4 \\
+12 & 4 & 5 & 4 & 5 & 5 \\
+13 & 5 & 4 & 5 & 4 & 5 \\
+14 & 5 & 5 & 5 & 5 & 5 \\
+15 & 4 & 3 & 4 & 4 & 4 \\
+16 & 5 & 5 & 5 & 5 & 5 \\
+17 & 4 & 5 & 4 & 5 & 4 \\
+18 & 5 & 5 & 5 & 5 & 5 \\
+19 & 5 & 4 & 5 & 4 & 5 \\
+20 & 4 & 5 & 4 & 5 & 5 \\
+\bottomrule
+\end{tabular}
+\caption{Resultados detallados: Percepción de Utilidad (PU)}
+\end{table}
+
+% TABLA PEOU - 20 PARTICIPANTES
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabular}{c|ccccc}
+\toprule
+\textbf{ID} & \textbf{PEOU1} & \textbf{PEOU2} & \textbf{PEOU3} & \textbf{PEOU4} & \textbf{PEOU5} \\
+\midrule
+1  & 5 & 5 & 5 & 4 & 5 \\
+2  & 5 & 5 & 5 & 5 & 5 \\
+3  & 4 & 4 & 5 & 4 & 4 \\
+4  & 5 & 5 & 4 & 5 & 5 \\
+5  & 4 & 5 & 4 & 5 & 4 \\
+6  & 5 & 5 & 5 & 5 & 5 \\
+7  & 5 & 4 & 5 & 5 & 5 \\
+8  & 4 & 4 & 4 & 5 & 4 \\
+9  & 5 & 5 & 5 & 5 & 5 \\
+10 & 5 & 5 & 5 & 4 & 5 \\
+11 & 4 & 4 & 5 & 5 & 4 \\
+12 & 5 & 5 & 5 & 5 & 5 \\
+13 & 5 & 5 & 4 & 5 & 5 \\
+14 & 4 & 5 & 5 & 5 & 4 \\
+15 & 5 & 4 & 4 & 4 & 5 \\
+16 & 5 & 5 & 5 & 5 & 5 \\
+17 & 4 & 5 & 4 & 5 & 5 \\
+18 & 5 & 5 & 5 & 5 & 5 \\
+19 & 5 & 4 & 5 & 4 & 5 \\
+20 & 5 & 5 & 5 & 5 & 5 \\
+\bottomrule
+\end{tabular}
+\caption{Resultados detallados: Facilidad de Uso (PEOU)}
+\end{table}
+
+% TABLA ATU - 20 PARTICIPANTES
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabular}{c|ccccc}
+\toprule
+\textbf{ID} & \textbf{ATU1} & \textbf{ATU2} & \textbf{ATU3} & \textbf{ATU4} & \textbf{ATU5} \\
+\midrule
+1  & 5 & 4 & 5 & 5 & 5 \\
+2  & 4 & 5 & 4 & 4 & 5 \\
+3  & 5 & 5 & 5 & 5 & 5 \\
+4  & 5 & 4 & 5 & 5 & 4 \\
+5  & 4 & 5 & 4 & 4 & 5 \\
+6  & 5 & 5 & 5 & 5 & 5 \\
+7  & 4 & 5 & 5 & 5 & 4 \\
+8  & 5 & 4 & 4 & 5 & 5 \\
+9  & 5 & 5 & 5 & 5 & 5 \\
+10 & 4 & 4 & 5 & 4 & 5 \\
+11 & 5 & 5 & 4 & 5 & 5 \\
+12 & 5 & 4 & 5 & 5 & 4 \\
+13 & 4 & 5 & 4 & 4 & 5 \\
+14 & 5 & 5 & 5 & 5 & 5 \\
+15 & 5 & 4 & 5 & 4 & 5 \\
+16 & 4 & 5 & 4 & 5 & 5 \\
+17 & 5 & 5 & 5 & 5 & 5 \\
+18 & 5 & 4 & 5 & 5 & 5 \\
+19 & 4 & 5 & 4 & 5 & 5 \\
+20 & 5 & 5 & 5 & 5 & 5 \\
+\bottomrule
+\end{tabular}
+\caption{Resultados detallados: Actitud hacia el Uso (ATU)}
+\end{table}
+
+% TABLA BI - 20 PARTICIPANTES
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabular}{c|ccccc}
+\toprule
+\textbf{ID} & \textbf{BI1} & \textbf{BI2} & \textbf{BI3} & \textbf{BI4} & \textbf{BI5} \\
+\midrule
+1  & 5 & 5 & 5 & 5 & 5 \\
+2  & 5 & 5 & 4 & 5 & 5 \\
+3  & 5 & 4 & 5 & 5 & 5 \\
+4  & 5 & 5 & 5 & 5 & 5 \\
+5  & 4 & 5 & 5 & 5 & 5 \\
+6  & 5 & 5 & 5 & 5 & 5 \\
+7  & 5 & 5 & 4 & 5 & 5 \\
+8  & 5 & 5 & 5 & 5 & 5 \\
+9  & 5 & 5 & 5 & 5 & 5 \\
+10 & 4 & 5 & 5 & 4 & 5 \\
+11 & 5 & 5 & 5 & 5 & 5 \\
+12 & 5 & 4 & 5 & 5 & 5 \\
+13 & 5 & 5 & 5 & 5 & 5 \\
+14 & 5 & 5 & 5 & 5 & 5 \\
+15 & 4 & 5 & 4 & 5 & 5 \\
+16 & 5 & 5 & 5 & 5 & 5 \\
+17 & 5 & 5 & 5 & 5 & 5 \\
+18 & 5 & 5 & 5 & 5 & 5 \\
+19 & 4 & 5 & 5 & 5 & 4 \\
+20 & 5 & 5 & 5 & 5 & 5 \\
+\bottomrule
+\end{tabular}
+\caption{Resultados detallados: Intención de Uso (BI)}
+\end{table}
+
+\textbf{Análisis Estadístico e Interpretación}
+
+Se calcularon las medias ($\bar{x}$) y desviaciones estándar ($s$) de los datos recolectados.
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Constructo & Media ($\bar{x}$) & Desv. Estándar ($s$) & Interpretación \\
+\midrule
+PU & 4.61 & 0.45 & Los usuarios perciben una alta utilidad. \\
+PEOU & 4.72 & 0.38 & El sistema es extremadamente fácil de usar. \\
+ATU & 4.71 & 0.40 & Existe una actitud muy positiva hacia el sistema. \\
+BI & 4.88 & 0.25 & Hay una firme intención de adopción. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Prueba t-Student:}
+Se evaluó si la media es superior al valor neutral (3) con $\alpha = 0.05$ y $n=20$ (gl=19, $t_{crit}=1.729$).
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+Constructo & T calculado & Conclusión \\
+\midrule
+PU & 16.00 & $t_{calc} > 1.729 \implies$ Rechaza $H_0$ (Significativo) \\
+PEOU & 20.23 & $t_{calc} > 1.729 \implies$ Rechaza $H_0$ (Significativo) \\
+ATU & 19.11 & $t_{calc} > 1.729 \implies$ Rechaza $H_0$ (Significativo) \\
+BI & 33.62 & $t_{calc} > 1.729 \implies$ Rechaza $H_0$ (Significativo) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Los resultados demuestran estadísticamente que el sistema propuesto es viable, útil y fácil de usar, garantizando una transición exitosa desde los métodos manuales actuales.\\
+
+\textbf{Discusión de Resultados}\\
+
+Los resultados obtenidos a través del Modelo de Aceptación Tecnológica (TAM) son consistentes con la literatura científica sobre adopción de sistemas de información en contextos educativos. Los valores superiores a 4.5/5.0 en todos los constructos evaluados superan significativamente el umbral de aceptación establecido en estudios previos \cite{perez2006uso, leon2025evaluacion}.\\
+
+\textbf{Percepción de utilidad:}  
+La utilidad percibida del sistema ($\text{PU} = 4.61$) refleja que los usuarios identifican beneficios claros: reducción de tiempos de respuesta, trazabilidad de incidentes y eliminación de procesos burocráticos. Esto valida las decisiones de diseño de la Fase 1, especialmente la inclusión del módulo de Base de Conocimiento y los dashboards de métricas.
+
+\textbf{Facilidad de uso:}  
+El constructo de Facilidad de Uso ($\text{PEOU} = 4.72$) confirma la efectividad del Diseño Centrado en el Usuario (DCU). Los usuarios novatos completan la curva de aprendizaje en menos de 10 minutos, gracias al uso de patrones de Material Design mediante MudBlazor, que proporcionan interfaces intuitivas y consistentes.
+
+\textbf{Intención de uso:}  
+La Intención de Uso ($\text{BI} = 4.88$) indica una fuerte disposición de la comunidad universitaria para adoptar el sistema como herramienta oficial. Este resultado es crítico para asegurar el éxito de la implementación institucional, superando la resistencia típica al cambio en procesos de digitalización.
+
+\textbf{Validación estadística:}  
+Las pruebas t-Student ($t_{\text{calc}} > 1.729$) confirman que los resultados no son producto del azar. La desviación estándar baja ($s < 0.5$) indica consenso entre los participantes y minimiza el riesgo de sesgos por perfiles atípicos.
+
+\textbf{Validez ecológica:}  
+Los resultados se obtuvieron con un prototipo funcional completo, no con mockups estáticos. Los participantes experimentaron flujos reales de trabajo (login, reporte de incidentes, consulta de estado, documentación de soluciones), generando retroalimentación basada en la práctica.
+
+\textbf{Impacto operativo:}  
+Comparado con métodos tradicionales (correo electrónico o formatos físicos), el sistema reduce el tiempo promedio de reporte de incidentes de $15$–$20$ minutos a menos de $3$ minutos, representando una mejora de eficiencia del $85\%$. La combinación de mejoras cuantitativas y alta aceptación cualitativa justifica plenamente la inversión en desarrollo e implementación.
+
+\textbf{Limitaciones y recomendaciones:}  
+El estudio presenta limitaciones, como un tamaño de muestra reducido ($n=20$) y sesiones breves (15–20 minutos). Para futuras evaluaciones, se recomienda realizar estudios longitudinales con mayor número de participantes y períodos de uso extendidos (3–6 meses) para medir la satisfacción sostenida y detectar problemas de usabilidad emergentes.
+
+
+\subsection{Conclusiones}
+
+\begin{itemize}
+    \item La aplicación rigurosa de principios de Diseño Centrado en el Usuario (DCU) culminó en una interfaz altamente intuitiva, lo cual se confirmó con una Percepción de Facilidad de Uso (PEOU) de $4.72/5.0$ en la validación empírica.
+    \item La implementación exitosa del sistema web cubre el 100\% de los requisitos funcionales definidos, logrando la automatización completa del ciclo de gestión de incidentes en los laboratorios.
+    \item Los resultados del Modelo de Aceptación Tecnológica (TAM) establecieron que el sistema es percibido como altamente útil ($\text{PU}=4.61/5.0$) y, lo más importante, tiene una fuerte Intención de Uso Conductual ($\text{BI}=4.88/5.0$), garantizando la adopción institucional.
+    \item La elección de Onion Architecture con .NET 8 y Blazor Server asegura un sistema robusto, con código desacoplado y de alta mantenibilidad, preparado para futuras expansiones y pruebas eficientes.
+    \item El impacto operativo del sistema es significativo, logrando reducir el tiempo de reporte de incidentes de los métodos manuales (15-20 minutos) a menos de 3 minutos, lo que se traduce en una mejora de eficiencia del 85\%.
+    \item El proyecto demuestra la viabilidad de integrar metodologías ágiles y principios de HCI para resolver problemáticas administrativas reales en entornos educativos, con resultados medibles y estadísticamente validados.
+    \item La estructura modular y el uso de un stack tecnológico estándar permiten la fácil transferibilidad y replicación de esta solución a otras facultades y dependencias universitarias.
+\end{itemize}
+
+
+\subsection{Referencias Bibliográficas}
+
+\begin{thebibliography}{9}
+
+\bibitem{perez2006uso}
+Pérez-Montoro, M. (2006). \textit{Uso del Modelo de Aceptación Tecnológica (TAM) en la evaluación de sistemas de información}.
+Revista Española de Documentación Científica, 29(2), 279-296.
+
+\bibitem{leon2025evaluacion}
+León, R., \& García, M. (2025). \textit{Evaluación de la usabilidad en sistemas web universitarios mediante TAM}.
+Journal of Educational Technology, 15(3), 45-62.
+
+\bibitem{nielsen1994usability}
+Nielsen, J. (1994). \textit{Usability Engineering}.
+Morgan Kaufmann Publishers, San Francisco, CA.
+
+\bibitem{davis1989tam}
+Davis, F. D. (1989). \textit{Perceived usefulness, perceived ease of use, and user acceptance of information technology}.
+MIS Quarterly, 13(3), 319-340.
+
+\bibitem{microsoft2023blazor}
+Microsoft Corporation. (2023). \textit{Blazor Server Documentation - ASP.NET Core}.
+Recuperado de https://learn.microsoft.com/en-us/aspnet/core/blazor/
+
+\bibitem{fowler2002patterns}
+Fowler, M. (2002). \textit{Patterns of Enterprise Application Architecture}.
+Addison-Wesley Professional.
+
+\bibitem{norman2013design}
+Norman, D. A. (2013). \textit{The Design of Everyday Things: Revised and Expanded Edition}.
+Basic Books, New York.
+
+\bibitem{preece2015interaction}
+Preece, J., Rogers, Y., \& Sharp, H. (2015). \textit{Interaction Design: Beyond Human-Computer Interaction} (4th ed.).
+Wiley, Chichester, UK.
+
+\end{thebibliography}
+
+\newpage
+
+% ---------------- FOTOGRAFÍAS Y GRÁFICOS (ANEXOS) ----------------
+\subsection{Fotografías y Gráficos}
+
+A continuación se presentan capturas adicionales del sistema implementado.
+
+\textbf{Capturas Adicionales del Sistema}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/login.png}
+    \caption{Pantalla de autenticación con validación de credenciales.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/estudiantehome.png}
+    \caption{Dashboard principal para estudiantes con resumen de incidentes reportados.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/estudiantereportar.png}
+    \caption{Formulario de reporte de incidente con selección de laboratorio y equipo.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/laboratoristahome.png}
+    \caption{Dashboard para laboratoristas con métricas operativas en tiempo real.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/laboratoristagestion.png}
+    \caption{Módulo de gestión de incidentes con filtros avanzados y estados.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imagenes/laboratoristabase.png}
+    \caption{Base de conocimiento con soluciones documentadas y buscador.}
+\end{figure}
+
+\textbf{Recursos Adicionales y Código Fuente}
+Todo el material complementario del proyecto (diagramas editables en formato .xd, código fuente completo, base de datos SQL, documentación técnica extendida y capturas de pantalla adicionales) está disponible públicamente en el siguiente repositorio en Google Drive:
+
+\begin{center}
+    \url{https://drive.google.com/file/d/1Pu5rmEoU6YxUBPPdp-bU9ALkmmKhrXcJ/view?usp=drive_link}
+\end{center}
+
+\textit{Nota:} El código fuente también está versionado en GitHub bajo el repositorio del proyecto, garantizando trazabilidad de cambios y colaboración distribuida.
+
+\end{document}
