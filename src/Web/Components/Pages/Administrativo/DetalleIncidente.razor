@@ -3,9 +3,14 @@
 @rendermode InteractiveServer
 @using IncidentManagement.Application.Interfaces
 @using IncidentManagement.Application.DTOs
+@using IncidentManagement.Domain.Entities
 @inject IIncidenteService IncidenteService
+@inject IAsignacionService AsignacionService
 @inject IAsignacionRepository AsignacionRepository
+@inject IUsuarioRepository UsuarioRepository
+@inject INotificacionService NotificacionService
 @inject NavigationManager Navigation
+@inject ISnackbar Snackbar
 
 <PageTitle>Detalle del Incidente</PageTitle>
 
@@ -107,6 +112,58 @@
                             <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
                                 Este incidente aún no ha sido asignado a ningún técnico.
                             </MudAlert>
+                            
+                            @if (incidente.Estado != "Cerrado" && incidente.Estado != "Resuelto")
+                            {
+                                <MudDivider Class="my-4" />
+                                <MudText Typo="Typo.h6" Class="mb-3">
+                                    <MudIcon Icon="@Icons.Material.Filled.AssignmentInd" Class="me-2" />
+                                    Asignar Incidente a Laboratorista
+                                </MudText>
+                                
+                                <MudStack Spacing="3">
+                                    <div>
+                                        <label for="tecnico-select"><strong>Laboratorista</strong></label>
+                                        <select id="tecnico-select" class="form-control" @bind="tecnicoSeleccionadoId" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">
+                                            <option value="">-- Seleccionar Laboratorista --</option>
+                                            @foreach (var tecnico in tecnicos)
+                                            {
+                                                <option value="@tecnico.UsuarioID">@tecnico.NombreCompleto</option>
+                                            }
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label for="tipo-asignacion-select"><strong>Tipo de Asignación</strong></label>
+                                        <select id="tipo-asignacion-select" class="form-control" @bind="tipoAsignacion" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">
+                                            <option value="">-- Seleccionar --</option>
+                                            <option value="Urgente">Urgente</option>
+                                            <option value="Normal">Normal</option>
+                                            <option value="Programada">Programada</option>
+                                        </select>
+                                    </div>
+
+                                    <MudTextField @bind-Value="notasAsignacion"
+                                                  Label="Notas de Asignación (Opcional)"
+                                                  Variant="Variant.Outlined"
+                                                  Lines="3"
+                                                  Placeholder="Instrucciones o comentarios para el laboratorista..." />
+
+                                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                                               OnClick="AsignarIncidente" Disabled="isSubmitting || string.IsNullOrEmpty(tecnicoSeleccionadoId)">
+                                        @if (isSubmitting)
+                                        {
+                                            <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                                            <span>Asignando...</span>
+                                        }
+                                        else
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.AssignmentInd" Class="me-2" />
+                                            <span>Asignar Incidente</span>
+                                        }
+                                    </MudButton>
+                                </MudStack>
+                            }
                         }
 
                         @if (incidente.FechaResolucion.HasValue)
@@ -128,9 +185,14 @@
     public int? IncidenteId { get; set; }
 
     private bool isLoading = true;
+    private bool isSubmitting = false;
     private string? errorMessage;
     private IncidenteDto? incidente;
     private AsignacionDto? asignacionActual;
+    private List<Usuario> tecnicos = new();
+    private string tecnicoSeleccionadoId = "";
+    private string tipoAsignacion = "";
+    private string notasAsignacion = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -141,6 +203,7 @@
             return;
         }
 
+        await CargarTecnicos();
         await CargarIncidente();
     }
 
@@ -192,6 +255,69 @@
     private void Volver()
     {
         Navigation.NavigateTo("/administrativo/incidentes");
+    }
+
+    private async Task CargarTecnicos()
+    {
+        try
+        {
+            var usuariosLab = await UsuarioRepository.GetByRolAsync("Laboratorista");
+            tecnicos = usuariosLab.ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DetalleIncidente] Error al cargar técnicos: {ex.Message}");
+        }
+    }
+
+    private async Task AsignarIncidente()
+    {
+        if (incidente == null || string.IsNullOrEmpty(tecnicoSeleccionadoId)) return;
+
+        isSubmitting = true;
+        try
+        {
+            var createDto = new CreateAsignacionDto
+            {
+                IncidenteID = incidente.IncidenteID,
+                UsuarioAsignadoID = int.Parse(tecnicoSeleccionadoId),
+                TipoAsignacion = tipoAsignacion,
+                Notas = notasAsignacion
+            };
+
+            await AsignacionService.AsignarIncidenteAsync(createDto);
+            
+            // Notificar al estudiante
+            if (incidente.UsuarioReportadorID.HasValue)
+            {
+                var tecnico = await UsuarioRepository.GetByIdAsync(int.Parse(tecnicoSeleccionadoId));
+                await NotificacionService.CrearNotificacionAsync(
+                    incidente.UsuarioReportadorID.Value,
+                    incidente.IncidenteID,
+                    "Incidente Asignado",
+                    $"Tu incidente '{incidente.CodigoIncidente}' ha sido asignado al técnico {tecnico?.NombreCompleto}. Pronto comenzará a trabajar en él.",
+                    "Asignacion",
+                    $"/estudiante/incidencias/detalle?id={incidente.IncidenteID}"
+                );
+            }
+            
+            Snackbar.Add("Incidente asignado exitosamente", Severity.Success);
+            await CargarIncidente();
+            
+            // Limpiar formulario
+            tecnicoSeleccionadoId = "";
+            tipoAsignacion = "";
+            notasAsignacion = "";
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al asignar incidente: {ex.Message}", Severity.Error);
+            Console.WriteLine($"[DetalleIncidente] Error: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
     }
 
     private Color GetEstadoColor(string estado)

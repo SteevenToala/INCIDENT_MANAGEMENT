@@ -145,7 +145,7 @@
 
         try
         {
-            computadoras = (await EstudiantePortalService.GetComputadorasAsync()).ToList();
+            computadoras = (await EstudiantePortalService.GetComputadorasAsync(userId.Value)).ToList();
             // Extraer laboratorios únicos
             laboratorios = computadoras
                 .GroupBy(c => c.LaboratorioId)

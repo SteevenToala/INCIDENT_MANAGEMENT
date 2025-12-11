@@ -12,7 +12,7 @@ public interface IEstudiantePortalService
     Task<IReadOnlyList<IncidenteDto>> GetMisIncidentesAsync(int usuarioId);
     Task<IncidenteDto> CrearIncidenteAsync(NuevaIncidenciaModel model, int usuarioId);
     Task<IReadOnlyList<BaseConocimientoDto>> BuscarBaseConocimientoAsync(string? filtro);
-    Task<IReadOnlyList<ComputadoraOption>> GetComputadorasAsync();
+    Task<IReadOnlyList<ComputadoraOption>> GetComputadorasAsync(int usuarioId);
 }
 
 public class EstudiantePortalService : IEstudiantePortalService
@@ -20,15 +20,18 @@ public class EstudiantePortalService : IEstudiantePortalService
     private readonly IIncidenteService _incidenteService;
     private readonly IBaseConocimientoService _baseConocimientoService;
     private readonly IComputadoraRepository _computadoraRepository;
+    private readonly IUsuarioRepository _usuarioRepository;
 
     public EstudiantePortalService(
         IIncidenteService incidenteService,
         IBaseConocimientoService baseConocimientoService,
-        IComputadoraRepository computadoraRepository)
+        IComputadoraRepository computadoraRepository,
+        IUsuarioRepository usuarioRepository)
     {
         _incidenteService = incidenteService;
         _baseConocimientoService = baseConocimientoService;
         _computadoraRepository = computadoraRepository;
+        _usuarioRepository = usuarioRepository;
     }
 
     public async Task<EstudianteDashboardModel> GetDashboardAsync(int usuarioId)
@@ -87,11 +90,19 @@ public class EstudiantePortalService : IEstudiantePortalService
             .ToList();
     }
 
-    public async Task<IReadOnlyList<ComputadoraOption>> GetComputadorasAsync()
+    public async Task<IReadOnlyList<ComputadoraOption>> GetComputadorasAsync(int usuarioId)
     {
+        // Obtener la facultad del usuario
+        var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
+        if (usuario?.FacultadID == null)
+        {
+            return new List<ComputadoraOption>();
+        }
+
         var computadoras = await _computadoraRepository.GetAllAsync();
 
         return computadoras
+            .Where(c => c.Laboratorio != null && c.Laboratorio.FacultadID == usuario.FacultadID)
             .Select(c => new ComputadoraOption
             {
                 Id = c.ComputadoraID,
