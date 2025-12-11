@@ -1,0 +1,316 @@
+@page "/tecnico-experto/mis-tareas"
+@attribute [Authorize(Roles = "TecnicoExperto")]
+@rendermode InteractiveServer
+@using MudBlazor
+@using IncidentManagement.Application.Interfaces
+@using IncidentManagement.Application.DTOs
+@using IncidentManagement.Domain.Entities
+@inject IIncidenteService IncidenteService
+@inject ILaboratorioRepository LaboratorioRepository
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Mis Incidentes Escalados</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">
+        <MudIcon Icon="@Icons.Material.Filled.Engineering" Class="me-2" />
+        Mis Incidentes Escalados
+    </MudText>
+
+    @if (isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+    }
+    else
+    {
+        <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+            <MudTabPanel Text="Pendientes" Icon="@Icons.Material.Filled.AssignmentInd" BadgeData="@incidentesAsignados.Count">
+                <MudTable Items="@incidentesAsignados" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
+                          Filter="new Func<IncidenteDto, bool>(FilterFunc)" 
+                          SortLabel="Ordenar por"
+                          RowsPerPage="10">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">Incidentes Pendientes de Atención</MudText>
+                        <MudSpacer />
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <select @bind="laboratorioSeleccionadoId" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                                <option value="">Todos los Laboratorios</option>
+                                @foreach (var lab in laboratorios)
+                                {
+                                    <option value="@lab.LaboratorioID">@lab.Nombre</option>
+                                }
+                            </select>
+                            <MudTextField @bind-Value="searchString" Placeholder="Buscar" Adornment="Adornment.Start" 
+                                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                        </div>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.IncidenteID)">ID</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.CodigoIncidente)">Código</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Titulo)">Título</MudTableSortLabel></MudTh>
+                        <MudTh>Servicio</MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Prioridad)">Prioridad</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.ComputadoraNombre)">Computadora</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.LaboratorioNombre)">Laboratorio</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.FechaReporte)">Fecha</MudTableSortLabel></MudTh>
+                        <MudTh>Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="ID">@context.IncidenteID</MudTd>
+                        <MudTd DataLabel="Código">@context.CodigoIncidente</MudTd>
+                        <MudTd DataLabel="Título">@context.Titulo</MudTd>
+                        <MudTd DataLabel="Servicio">
+                            @if (!string.IsNullOrEmpty(context.ServicioNombre))
+                            {
+                                <MudChip Icon="@Icons.Material.Filled.Build" Color="Color.Primary" Size="Size.Small">@context.ServicioNombre</MudChip>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Prioridad">
+                            <MudChip Color="@GetPriorityColor(context.Prioridad)" Size="Size.Small">@context.Prioridad</MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Computadora">@context.ComputadoraNombre</MudTd>
+                        <MudTd DataLabel="Laboratorio">@context.LaboratorioNombre</MudTd>
+                        <MudTd DataLabel="Fecha">@context.FechaReporte.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                        <MudTd DataLabel="Acciones">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="@(() => VerDetalle(context.IncidenteID))">
+                                Atender
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager InfoFormat="{first_item}-{last_item} de {all_items}" HideRowsPerPage="true" />
+                    </PagerContent>
+                    <NoRecordsContent>
+                        <MudAlert Severity="Severity.Info" Class="ma-4">
+                            No tienes incidentes escalados asignados en este momento.
+                        </MudAlert>
+                    </NoRecordsContent>
+                </MudTable>
+            </MudTabPanel>
+            
+            <MudTabPanel Text="En Progreso" Icon="@Icons.Material.Filled.Engineering" BadgeData="@incidentesIniciados.Count">
+                <MudTable Items="@incidentesIniciados" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
+                          Filter="new Func<IncidenteDto, bool>(FilterFunc)" 
+                          SortLabel="Ordenar por"
+                          RowsPerPage="10">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">Incidentes en Progreso</MudText>
+                        <MudSpacer />
+                        <MudTextField @bind-Value="searchString" Placeholder="Buscar" Adornment="Adornment.Start" 
+                                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.IncidenteID)">ID</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.CodigoIncidente)">Código</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Titulo)">Título</MudTableSortLabel></MudTh>
+                        <MudTh>Servicio</MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Prioridad)">Prioridad</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.ComputadoraNombre)">Computadora</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.FechaReporte)">Fecha</MudTableSortLabel></MudTh>
+                        <MudTh>Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="ID">@context.IncidenteID</MudTd>
+                        <MudTd DataLabel="Código">@context.CodigoIncidente</MudTd>
+                        <MudTd DataLabel="Título">@context.Titulo</MudTd>
+                        <MudTd DataLabel="Servicio">
+                            @if (!string.IsNullOrEmpty(context.ServicioNombre))
+                            {
+                                <MudChip Icon="@Icons.Material.Filled.Build" Color="Color.Primary" Size="Size.Small">@context.ServicioNombre</MudChip>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Prioridad">
+                            <MudChip Color="@GetPriorityColor(context.Prioridad)" Size="Size.Small">@context.Prioridad</MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Computadora">@context.ComputadoraNombre</MudTd>
+                        <MudTd DataLabel="Fecha">@context.FechaReporte.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                        <MudTd DataLabel="Acciones">
+                            <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small" OnClick="@(() => VerDetalle(context.IncidenteID))">
+                                Continuar
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager InfoFormat="{first_item}-{last_item} de {all_items}" HideRowsPerPage="true" />
+                    </PagerContent>
+                    <NoRecordsContent>
+                        <MudAlert Severity="Severity.Info" Class="ma-4">
+                            No tienes incidentes en progreso.
+                        </MudAlert>
+                    </NoRecordsContent>
+                </MudTable>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Completados" Icon="@Icons.Material.Filled.CheckCircle" BadgeData="@incidentesCompletados.Count">
+                <MudTable Items="@incidentesCompletados" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true"
+                          Filter="new Func<IncidenteDto, bool>(FilterFunc)" 
+                          SortLabel="Ordenar por"
+                          RowsPerPage="10">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">Incidentes Completados</MudText>
+                        <MudSpacer />
+                        <MudTextField @bind-Value="searchString" Placeholder="Buscar" Adornment="Adornment.Start" 
+                                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.IncidenteID)">ID</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.CodigoIncidente)">Código</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Titulo)">Título</MudTableSortLabel></MudTh>
+                        <MudTh>Servicio</MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.Estado)">Estado</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<IncidenteDto, object>(x => x.FechaReporte)">Fecha Reporte</MudTableSortLabel></MudTh>
+                        <MudTh>Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="ID">@context.IncidenteID</MudTd>
+                        <MudTd DataLabel="Código">@context.CodigoIncidente</MudTd>
+                        <MudTd DataLabel="Título">@context.Titulo</MudTd>
+                        <MudTd DataLabel="Servicio">
+                            @if (!string.IsNullOrEmpty(context.ServicioNombre))
+                            {
+                                <MudChip Icon="@Icons.Material.Filled.Build" Color="Color.Primary" Size="Size.Small">@context.ServicioNombre</MudChip>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Estado">
+                            <MudChip Color="@GetEstadoColor(context.Estado)" Size="Size.Small">@context.Estado</MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Fecha">@context.FechaReporte.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                        <MudTd DataLabel="Acciones">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small" OnClick="@(() => VerDetalle(context.IncidenteID))">
+                                Ver Detalle
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager InfoFormat="{first_item}-{last_item} de {all_items}" HideRowsPerPage="true" />
+                    </PagerContent>
+                    <NoRecordsContent>
+                        <MudAlert Severity="Severity.Info" Class="ma-4">
+                            No has completado incidentes aún.
+                        </MudAlert>
+                    </NoRecordsContent>
+                </MudTable>
+            </MudTabPanel>
+        </MudTabs>
+    }
+</MudContainer>
+
+@code {
+    private List<IncidenteDto> todosIncidentes = new();
+    private List<IncidenteDto> incidentesAsignados = new();
+    private List<IncidenteDto> incidentesIniciados = new();
+    private List<IncidenteDto> incidentesCompletados = new();
+    private List<Laboratorio> laboratorios = new();
+    
+    private bool isLoading = true;
+    private string errorMessage = "";
+    private string searchString = "";
+    private string laboratorioSeleccionadoId = "";
+    private int? usuarioId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        usuarioId = user.GetUserId();
+        if (usuarioId is null)
+        {
+            errorMessage = "No se pudo identificar al usuario.";
+            isLoading = false;
+            return;
+        }
+
+        await CargarDatos();
+        isLoading = false;
+    }
+
+    private async Task CargarDatos()
+    {
+        if (!usuarioId.HasValue) return;
+        
+        // Cargar incidentes asignados al técnico experto
+        var incidentes = await IncidenteService.GetIncidentesByTecnicoAsync(usuarioId.Value);
+        todosIncidentes = incidentes.ToList();
+
+        // Filtrar por estado de asignación para expertos
+        incidentesAsignados = todosIncidentes
+            .Where(i => i.EstadoAsignacion == "Pendiente" && i.Estado == "Asignado a Experto")
+            .OrderBy(i => i.FechaReporte)
+            .ToList();
+
+        incidentesIniciados = todosIncidentes
+            .Where(i => i.EstadoAsignacion == "En Progreso")
+            .OrderBy(i => i.FechaReporte)
+            .ToList();
+
+        incidentesCompletados = todosIncidentes
+            .Where(i => i.EstadoAsignacion == "Completado" && (i.Estado == "Resuelto" || i.Estado == "Cerrado"))
+            .OrderByDescending(i => i.FechaReporte)
+            .ToList();
+
+        // Cargar laboratorios
+        var labsResult = await LaboratorioRepository.GetAllAsync();
+        laboratorios = labsResult.ToList();
+    }
+
+    private bool FilterFunc(IncidenteDto incidente)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return ApplyLaboratorioFilter(incidente);
+
+        var match = incidente.CodigoIncidente?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true
+            || incidente.Titulo?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true
+            || incidente.Descripcion?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true
+            || incidente.ComputadoraNombre?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true
+            || incidente.LaboratorioNombre?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true;
+
+        return match && ApplyLaboratorioFilter(incidente);
+    }
+
+    private bool ApplyLaboratorioFilter(IncidenteDto incidente)
+    {
+        if (string.IsNullOrEmpty(laboratorioSeleccionadoId))
+            return true;
+
+        return incidente.LaboratorioNombre?.Contains(laboratorios.FirstOrDefault(l => l.LaboratorioID.ToString() == laboratorioSeleccionadoId)?.Nombre ?? "") == true;
+    }
+
+    private void VerDetalle(int incidenteId)
+    {
+        Navigation.NavigateTo($"/tecnico-experto/incidente/{incidenteId}");
+    }
+
+    private Color GetPriorityColor(string? prioridad)
+    {
+        return prioridad?.ToLower() switch
+        {
+            "alta" => Color.Error,
+            "media" => Color.Warning,
+            "baja" => Color.Success,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetEstadoColor(string? estado)
+    {
+        return estado?.ToLower() switch
+        {
+            "resuelto" => Color.Success,
+            "cerrado" => Color.Dark,
+            "asignado a experto" => Color.Warning,
+            _ => Color.Default
+        };
+    }
+}

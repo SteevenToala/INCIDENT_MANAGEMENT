@@ -102,6 +102,15 @@
 
                 <!-- Panel de Acciones según el Estado -->
                 <MudPaper Elevation="2" Class="pa-4">
+                    @{
+                        Console.WriteLine($"[Laboratorista] Evaluando condiciones:");
+                        Console.WriteLine($"[Laboratorista] - asignacionActual == null: {asignacionActual == null}");
+                        Console.WriteLine($"[Laboratorista] - Estado incidente: '{incidente.Estado}'");
+                        if (asignacionActual != null)
+                        {
+                            Console.WriteLine($"[Laboratorista] - Estado asignación: '{asignacionActual.EstadoAsignacion}'");
+                        }
+                    }
                     @if (asignacionActual == null)
                     {
                         <MudAlert Severity="Severity.Info">
@@ -130,7 +139,7 @@
                             </MudButton>
                         </MudStack>
                     }
-                    else if (asignacionActual != null && asignacionActual.EstadoAsignacion == "Aceptado" && incidente.Estado != "Cerrado")
+                    else if (asignacionActual != null && (asignacionActual.EstadoAsignacion == "Aceptado" || asignacionActual.EstadoAsignacion == "En Progreso") && incidente.Estado != "Cerrado")
                     {
                         <!-- Paso 3: Trabajando - Botón para completar trabajo o reasignar -->
                         <MudText Typo="Typo.h6" Class="mb-3">
@@ -626,6 +635,12 @@
                     .Where(a => a.UsuarioAsignadoID == userId.Value)
                     .OrderByDescending(a => a.FechaAsignacion)
                     .FirstOrDefault();
+                
+                Console.WriteLine($"[Laboratorista] AsignacionActual encontrada: {asignacionActual != null}");
+                if (asignacionActual != null)
+                {
+                    Console.WriteLine($"[Laboratorista] Estado asignación: '{asignacionActual.EstadoAsignacion}'");
+                }
             }
             
             // Obtener la asignación activa más reciente para el timeline (no completada por reasignación)
@@ -645,6 +660,7 @@
             tieneAsignacionActiva = todasAsignaciones.Any(a => 
                 a.EstadoAsignacion == "Pendiente" || 
                 a.EstadoAsignacion == "Aceptado" || 
+                a.EstadoAsignacion == "En Progreso" ||
                 (a.EstadoAsignacion == "Completado" && (a.Notas == null || !a.Notas.Contains("Reasignado a otro técnico")))
             );
         }
@@ -684,6 +700,7 @@
             
             Snackbar.Add("Asignación aceptada. Ahora puedes trabajar en el incidente.", Severity.Success);
             await CargarIncidencia();
+            StateHasChanged(); // Forzar actualización de la UI
         }
         catch (Exception ex)
         {
@@ -907,7 +924,7 @@
                 return "Completado";
             
             // 3. Trabajo Iniciado - El laboratorista aceptó y está trabajando
-            if (primeraAsignacion.EstadoAsignacion == "Aceptado")
+            if (primeraAsignacion.EstadoAsignacion == "Aceptado" || primeraAsignacion.EstadoAsignacion == "En Progreso")
                 return "Iniciado";
             
             // 2. Asignado - Tiene asignación pero pendiente de aceptar

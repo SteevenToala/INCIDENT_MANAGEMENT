@@ -9,6 +9,7 @@
 @inject IAsignacionRepository AsignacionRepository
 @inject IUsuarioRepository UsuarioRepository
 @inject INotificacionService NotificacionService
+@inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
@@ -275,6 +276,76 @@
                             }
                         }
 
+                        @* Gestión de Proveedores *@
+                        @if (incidente.Estado == "Requiere Proveedor")
+                        {
+                            <MudDivider Class="my-4" />
+                            <MudPaper Elevation="3" Class="pa-4" Style="background-color: #fff3cd; border-left: 4px solid #ff9800;">
+                                <MudText Typo="Typo.h5" Class="mb-3">
+                                    <MudIcon Icon="@Icons.Material.Filled.Business" Color="Color.Warning" Class="me-2" />
+                                    Gestión con Proveedor Externo
+                                </MudText>
+
+                                <MudAlert Severity="Severity.Warning" Class="mb-3">
+                                    <strong>⚠️ Incidente Escalado a Proveedor</strong>
+                                    <div>El técnico experto no pudo resolver este incidente. Requiere contactar al proveedor externo.</div>
+                                </MudAlert>
+
+                                @if (asignacionActual != null && !string.IsNullOrEmpty(asignacionActual.Notas))
+                                {
+                                    <MudPaper Outlined="true" Class="pa-3 mb-3" Style="background-color: white;">
+                                        <MudText Typo="Typo.subtitle2" Class="mb-2"><strong>📋 Diagnóstico del Técnico Experto:</strong></MudText>
+                                        <MudText Style="white-space: pre-line;">@asignacionActual.Notas</MudText>
+                                    </MudPaper>
+                                }
+
+                                <MudText Typo="Typo.h6" Class="mb-3">Registrar Gestión con Proveedor</MudText>
+
+                                <MudStack Spacing="3">
+                                    <MudTextField @bind-Value="notasProveedor"
+                                                  Label="Notas de Seguimiento"
+                                                  Variant="Variant.Outlined"
+                                                  Lines="4"
+                                                  Placeholder="Describe la gestión realizada con el proveedor (contacto, diagnóstico, solución, fechas, etc.)..."
+                                                  Required="true" />
+
+                                    <MudTextField @bind-Value="solucionProveedor"
+                                                  Label="Solución Implementada por el Proveedor"
+                                                  Variant="Variant.Outlined"
+                                                  Lines="3"
+                                                  Placeholder="Describe la solución que implementó el proveedor..."
+                                                  Required="true" />
+
+                                    <MudStack Row="true" Spacing="2">
+                                        <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Large"
+                                                   Style="flex: 1"
+                                                   OnClick="ResolverConProveedor" 
+                                                   Disabled="@(isSubmitting || string.IsNullOrWhiteSpace(notasProveedor) || string.IsNullOrWhiteSpace(solucionProveedor))">
+                                            @if (isSubmitting)
+                                            {
+                                                <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                                            }
+                                            else
+                                            {
+                                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="me-2" />
+                                            }
+                                            Marcar como Resuelto por Proveedor
+                                        </MudButton>
+
+                                        <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Large"
+                                                   OnClick="@(() => { notasProveedor = ""; solucionProveedor = ""; })"
+                                                   Disabled="isSubmitting">
+                                            Limpiar
+                                        </MudButton>
+                                    </MudStack>
+
+                                    <MudText Typo="Typo.caption" Color="Color.Info">
+                                        💡 <strong>Tip:</strong> Al marcar como resuelto, el incidente cambiará a estado "Resuelto" y se notificará al estudiante.
+                                    </MudText>
+                                </MudStack>
+                            </MudPaper>
+                        }
+
                         @if (incidente.FechaResolucion.HasValue)
                         {
                             var tiempoResolucion = (incidente.FechaResolucion.Value - incidente.FechaCreacion).TotalHours;
@@ -303,6 +374,8 @@
     private string tecnicoSeleccionadoId = "";
     private string tipoAsignacion = "";
     private string notasAsignacion = "";
+    private string notasProveedor = "";
+    private string solucionProveedor = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -328,6 +401,11 @@
                 errorMessage = "Incidente no encontrado";
                 return;
             }
+
+            Console.WriteLine($"[DetalleIncidente] Incidente cargado:");
+            Console.WriteLine($"[DetalleIncidente] - IncidenteID: {incidente.IncidenteID}");
+            Console.WriteLine($"[DetalleIncidente] - ServicioID: {incidente.ServicioID}");
+            Console.WriteLine($"[DetalleIncidente] - ServicioNombre: '{incidente.ServicioNombre}'");
 
             // Cargar asignación actual
             var asignaciones = await AsignacionRepository.GetByIncidenteIdAsync(IncidenteId.Value);
@@ -504,6 +582,74 @@
         {
             Snackbar.Add($"Error al asignar incidente: {ex.Message}", Severity.Error);
             Console.WriteLine($"[DetalleIncidente] Error: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task ResolverConProveedor()
+    {
+        if (string.IsNullOrWhiteSpace(notasProveedor) || string.IsNullOrWhiteSpace(solucionProveedor))
+        {
+            Snackbar.Add("Completa las notas y la solución del proveedor", Severity.Warning);
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            // Crear nota completa con información del proveedor
+            var notasCompletas = $"RESUELTO POR PROVEEDOR EXTERNO\n\n" +
+                               $"GESTIÓN REALIZADA:\n{notasProveedor}\n\n" +
+                               $"SOLUCIÓN IMPLEMENTADA:\n{solucionProveedor}\n\n" +
+                               $"Fecha de resolución: {DateTime.Now:dd/MM/yyyy HH:mm}";
+
+            // Crear una nueva asignación administrativa para registrar la gestión del proveedor
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var adminId = authState.User.GetUserId();
+            
+            if (adminId.HasValue && asignacionActual != null)
+            {
+                // Completar la asignación actual del experto si no está completada
+                if (asignacionActual.EstadoAsignacion != "Completado")
+                {
+                    await AsignacionService.CompletarAsignacionAsync(asignacionActual.AsignacionID, notasCompletas);
+                }
+            }
+
+            // Cambiar el estado del incidente a "Resuelto"
+            await IncidenteService.ActualizarEstadoAsync(new ActualizarEstadoDto
+            {
+                IncidenteID = incidente!.IncidenteID,
+                Estado = "Resuelto",
+                Comentarios = "Resuelto por proveedor externo"
+            });
+
+            // Notificar al estudiante
+            if (incidente.UsuarioReportadorID.HasValue)
+            {
+                await NotificacionService.CrearNotificacionAsync(
+                    incidente.UsuarioReportadorID.Value,
+                    incidente.IncidenteID,
+                    $"✓ Incidente {incidente.CodigoIncidente} Resuelto",
+                    $"Tu incidente '{incidente.Titulo}' ha sido resuelto por el proveedor externo. Puedes revisar los detalles de la solución.",
+                    "Resolucion"
+                );
+            }
+
+            Snackbar.Add("Incidente marcado como resuelto por proveedor", Severity.Success);
+            await Task.Delay(1000);
+            await CargarIncidente();
+            
+            // Limpiar formulario
+            notasProveedor = "";
+            solucionProveedor = "";
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al resolver incidente: {ex.Message}", Severity.Error);
         }
         finally
         {

@@ -71,6 +71,7 @@ public class IncidenteService : IIncidenteService
         {
             CodigoIncidente = codigo,
             ComputadoraID = dto.ComputadoraID,
+            ServicioID = dto.ServicioID,
             UsuarioReportadorID = usuarioId,
             LaboratorioID = computadora.LaboratorioID,
             FacultadID = computadora.Laboratorio?.FacultadID,

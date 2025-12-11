@@ -1,0 +1,606 @@
+@page "/tecnico-experto/incidente/{IncidenteId:int}"
+@attribute [Authorize(Roles = "TecnicoExperto")]
+@rendermode InteractiveServer
+@using MudBlazor
+@using IncidentManagement.Application.Interfaces
+@using IncidentManagement.Application.DTOs
+@using IncidentManagement.Domain.Entities
+@inject IIncidenteService IncidenteService
+@inject IAsignacionService AsignacionService
+@inject INotificacionService NotificacionService
+@inject IUsuarioRepository UsuarioRepository
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Resolver Incidente Escalado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" 
+               Color="Color.Default" OnClick="Volver" Class="mb-3">
+        Volver a Mis Tareas
+    </MudButton>
+    
+    <MudText Typo="Typo.h4" Class="mb-4">
+        <MudIcon Icon="@Icons.Material.Filled.Engineering" Class="me-2" />
+        Resolver Incidente Escalado
+    </MudText>
+
+    @if (isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+    }
+    else if (incidente != null)
+    {
+        <MudGrid>
+            <MudItem xs="12" md="8">
+                <MudPaper Elevation="2" Class="pa-4 mb-4">
+                    <MudStack Spacing="3">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <MudText Typo="Typo.h5">@incidente.CodigoIncidente</MudText>
+                            <MudChip Color="@GetEstadoColor(incidente.Estado)" Size="Size.Medium">
+                                @incidente.Estado
+                            </MudChip>
+                        </div>
+                        
+                        <MudDivider />
+                        
+                        <MudAlert Severity="Severity.Warning" Class="mb-3">
+                            <strong>⚠️ Incidente Escalado por Laboratorista</strong>
+                            <div>Este incidente fue escalado porque el laboratorista no pudo resolverlo. Requiere atención especializada.</div>
+                        </MudAlert>
+                        
+                        <MudText Typo="Typo.h6">@incidente.Titulo</MudText>
+                        
+                        <MudStack Row="true" Spacing="2" Class="flex-wrap">
+                            @if (!string.IsNullOrEmpty(incidente.ServicioNombre))
+                            {
+                                <MudChip Icon="@Icons.Material.Filled.Build" Color="Color.Primary" Size="Size.Small">
+                                    Servicio: @incidente.ServicioNombre
+                                </MudChip>
+                            }
+                            <MudChip Icon="@Icons.Material.Filled.Flag" Color="@GetPrioridadColor(incidente.Prioridad)" Size="Size.Small">
+                                Prioridad: @incidente.Prioridad
+                            </MudChip>
+                            <MudChip Icon="@Icons.Material.Filled.Computer" Size="Size.Small">
+                                @incidente.ComputadoraNombre
+                            </MudChip>
+                            <MudChip Icon="@Icons.Material.Filled.Room" Size="Size.Small">
+                                @incidente.LaboratorioNombre
+                            </MudChip>
+                        </MudStack>
+                        
+                        <MudText><strong>Descripción del Problema:</strong></MudText>
+                        <MudText Class="pa-3" Style="background-color: #f5f5f5; border-radius: 4px;">
+                            @incidente.Descripcion
+                        </MudText>
+                        
+                        <MudStack Row="true" Spacing="4">
+                            <MudText><strong>Reportado por:</strong> @incidente.UsuarioReportador</MudText>
+                            <MudText><strong>Fecha:</strong> @incidente.FechaReporte.ToString("dd/MM/yyyy HH:mm")</MudText>
+                        </MudStack>
+
+                        @if (historialAsignaciones != null && historialAsignaciones.Any())
+                        {
+                            <MudDivider />
+                            <MudText Typo="Typo.subtitle1"><strong>📋 Historial de Intentos Anteriores</strong></MudText>
+                            @foreach (var asignacion in historialAsignaciones.OrderBy(a => a.FechaAsignacion))
+                            {
+                                <MudPaper Outlined="true" Class="pa-3">
+                                    <MudStack Spacing="2">
+                                        <MudStack Row="true" Spacing="2">
+                                            <MudChip Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Info">
+                                                @asignacion.NombreTecnico
+                                            </MudChip>
+                                            <MudChip Size="Size.Small" Color="@(asignacion.TipoAsignacion == "Experto" ? Color.Secondary : Color.Primary)">
+                                                @asignacion.TipoAsignacion
+                                            </MudChip>
+                                            <MudChip Size="Size.Small">
+                                                @asignacion.EstadoAsignacion
+                                            </MudChip>
+                                        </MudStack>
+                                        @if (!string.IsNullOrEmpty(asignacion.Notas))
+                                        {
+                                            <MudText Typo="Typo.body2" Style="background-color: #fff3cd; padding: 8px; border-radius: 4px;">
+                                                <strong>Notas:</strong><br />
+                                                @asignacion.Notas
+                                            </MudText>
+                                        }
+                                        <MudText Typo="Typo.caption">
+                                            Asignado: @asignacion.FechaAsignacion?.ToString("dd/MM/yyyy HH:mm") 
+                                            @if (asignacion.FechaCompletacion.HasValue)
+                                            {
+                                                <span> | Completado: @asignacion.FechaCompletacion.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                            }
+                                        </MudText>
+                                    </MudStack>
+                                </MudPaper>
+                            }
+                        }
+
+                        @if (asignacionActual != null && asignacionActual.TipoAsignacion == "Experto")
+                        {
+                            <MudDivider />
+                            <MudText Typo="Typo.subtitle1"><strong>Tu Asignación Actual</strong></MudText>
+                            <MudStack Row="true" Spacing="3" Class="flex-wrap">
+                                <MudChip Icon="@Icons.Material.Filled.Engineering" 
+                                         Color="@GetEstadoAsignacionColor(asignacionActual.EstadoAsignacion)" 
+                                         Size="Size.Small">
+                                    @asignacionActual.EstadoAsignacion
+                                </MudChip>
+                                @if (asignacionActual.FechaAsignacion.HasValue)
+                                {
+                                    <MudText><strong>Asignado desde:</strong> @asignacionActual.FechaAsignacion.Value.ToString("dd/MM/yyyy HH:mm")</MudText>
+                                }
+                            </MudStack>
+                            
+                            @if (!string.IsNullOrEmpty(asignacionActual.Notas))
+                            {
+                                <MudText><strong>Notas del administrador:</strong></MudText>
+                                <MudText Class="pa-2" Style="background-color: #e3f2fd; border-radius: 4px; font-size: 0.9em;">
+                                    @asignacionActual.Notas
+                                </MudText>
+                            }
+                        }
+                    </MudStack>
+                </MudPaper>
+
+                @if (asignacionActual != null && asignacionActual.TipoAsignacion == "Experto" && asignacionActual.EstadoAsignacion != "Completado")
+                {
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <MudText Typo="Typo.h6" Class="mb-3">
+                            <MudIcon Icon="@Icons.Material.Filled.Assignment" Class="me-2" />
+                            @if (asignacionActual.EstadoAsignacion == "Pendiente")
+                            {
+                                <text>Iniciar Trabajo</text>
+                            }
+                            else
+                            {
+                                <text>Registrar Solución</text>
+                            }
+                        </MudText>
+
+                        @if (asignacionActual.EstadoAsignacion == "Pendiente")
+                        {
+                            <MudAlert Severity="Severity.Info" Class="mb-3">
+                                Este incidente está pendiente de atención. Haz clic en "Aceptar y Comenzar" para iniciar el trabajo.
+                            </MudAlert>
+                            
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" FullWidth="true"
+                                       OnClick="AceptarAsignacion" Disabled="isSubmitting" StartIcon="@Icons.Material.Filled.PlayArrow">
+                                @if (isSubmitting)
+                                {
+                                    <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                                }
+                                Aceptar y Comenzar
+                            </MudButton>
+                        }
+                        else if (asignacionActual.EstadoAsignacion == "En Progreso")
+                        {
+                            @if (!mostrarFormularioNoResuelto)
+                            {
+                                <MudTextField @bind-Value="diagnostico"
+                                              Label="Diagnóstico del Problema"
+                                              Variant="Variant.Outlined"
+                                              Lines="3"
+                                              Placeholder="Describe qué causó el problema y cómo lo identificaste..." Class="mb-3" />
+                                
+                                <MudTextField @bind-Value="solucion"
+                                              Label="Solución Aplicada"
+                                              Variant="Variant.Outlined"
+                                              Lines="4"
+                                              Placeholder="Describe detalladamente la solución que implementaste..." Class="mb-3" />
+                                
+                                <MudTextField @bind-Value="recomendaciones"
+                                              Label="Recomendaciones"
+                                              Variant="Variant.Outlined"
+                                              Lines="2"
+                                              Placeholder="Recomendaciones para prevenir futuros incidentes (opcional)..." Class="mb-3" />
+
+                                <MudStack Row="true" Spacing="2">
+                                    <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Large" 
+                                               Style="flex: 1"
+                                               OnClick="RegistrarSolucion" Disabled="@(isSubmitting || string.IsNullOrWhiteSpace(diagnostico) || string.IsNullOrWhiteSpace(solucion))"
+                                               StartIcon="@Icons.Material.Filled.CheckCircle">
+                                        @if (isSubmitting)
+                                        {
+                                            <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                                        }
+                                        Registrar Solución
+                                    </MudButton>
+                                    
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Warning" Size="Size.Large"
+                                               Style="flex: 1"
+                                               OnClick="MostrarFormularioNoResuelto" Disabled="isSubmitting"
+                                               StartIcon="@Icons.Material.Filled.Warning">
+                                        No Puedo Resolver
+                                    </MudButton>
+                                </MudStack>
+                            }
+                            else
+                            {
+                                <MudAlert Severity="Severity.Warning" Class="mb-3">
+                                    <strong>⚠️ Escalar al Proveedor</strong>
+                                    <div>Si no puedes resolver este incidente, será escalado al proveedor. El administrador gestionará el contacto y seguimiento con el proveedor externo.</div>
+                                </MudAlert>
+
+                                <MudTextField @bind-Value="razonNoResolucion"
+                                              Label="¿Por qué no puedes resolver este incidente?"
+                                              Variant="Variant.Outlined"
+                                              Lines="4"
+                                              Placeholder="Explica detalladamente las razones técnicas por las cuales este incidente requiere intervención del proveedor..."
+                                              Required="true"
+                                              Class="mb-3" />
+
+                                <MudTextField @bind-Value="diagnosticoExperto"
+                                              Label="Diagnóstico realizado"
+                                              Variant="Variant.Outlined"
+                                              Lines="3"
+                                              Placeholder="Describe qué revisaste y qué encontraste..."
+                                              Class="mb-3" />
+
+                                <MudStack Row="true" Spacing="2">
+                                    <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large"
+                                               Style="flex: 1"
+                                               OnClick="EscalarAProveedor" 
+                                               Disabled="@(isSubmitting || string.IsNullOrWhiteSpace(razonNoResolucion))"
+                                               StartIcon="@Icons.Material.Filled.ErrorOutline">
+                                        @if (isSubmitting)
+                                        {
+                                            <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                                        }
+                                        Confirmar Escalamiento a Proveedor
+                                    </MudButton>
+                                    
+                                    <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Large"
+                                               OnClick="@(() => mostrarFormularioNoResuelto = false)" 
+                                               Disabled="isSubmitting">
+                                        Cancelar
+                                    </MudButton>
+                                </MudStack>
+                            }
+                        }
+                    </MudPaper>
+                }
+                else if (asignacionActual?.EstadoAsignacion == "Completado" && incidente.Estado == "Requiere Proveedor")
+                {
+                    <MudAlert Severity="Severity.Warning" Class="mb-4">
+                        <strong>⚠️ Incidente Escalado al Proveedor</strong>
+                        <div>Has escalado este incidente al proveedor externo. El administrador gestionará el seguimiento con el proveedor.</div>
+                    </MudAlert>
+                }
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="2" Class="pa-4 mb-4">
+                    <MudText Typo="Typo.h6" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Class="me-2" />
+                        Información del Equipo
+                    </MudText>
+                    <MudStack Spacing="2">
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Default">COMPUTADORA</MudText>
+                            <MudText Typo="Typo.body2"><strong>@incidente.ComputadoraNombre</strong></MudText>
+                        </div>
+                        <MudDivider />
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Default">LABORATORIO</MudText>
+                            <MudText Typo="Typo.body2"><strong>@incidente.LaboratorioNombre</strong></MudText>
+                        </div>
+                        @if (!string.IsNullOrEmpty(incidente.ServicioNombre))
+                        {
+                            <MudDivider />
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Default">TIPO DE SERVICIO</MudText>
+                                <MudText Typo="Typo.body2"><strong>@incidente.ServicioNombre</strong></MudText>
+                            </div>
+                        }
+                    </MudStack>
+                </MudPaper>
+
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Timeline" Class="me-2" />
+                        Estado del Incidente
+                    </MudText>
+                    <MudStack Spacing="2">
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Default">ESTADO ACTUAL</MudText>
+                            <MudChip Color="@GetEstadoColor(incidente.Estado)" Size="Size.Small">@incidente.Estado</MudChip>
+                        </div>
+                        <MudDivider />
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Default">PRIORIDAD</MudText>
+                            <MudChip Color="@GetPrioridadColor(incidente.Prioridad)" Size="Size.Small">@incidente.Prioridad</MudChip>
+                        </div>
+                        @if (asignacionActual != null)
+                        {
+                            <MudDivider />
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Default">ESTADO DE ASIGNACIÓN</MudText>
+                                <MudChip Color="@GetEstadoAsignacionColor(asignacionActual.EstadoAsignacion)" Size="Size.Small">
+                                    @asignacionActual.EstadoAsignacion
+                                </MudChip>
+                            </div>
+                        }
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int IncidenteId { get; set; }
+
+    private IncidenteDto? incidente;
+    private AsignacionDto? asignacionActual;
+    private List<AsignacionDto> historialAsignaciones = new();
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private string errorMessage = "";
+    private int? usuarioId;
+    private string diagnostico = "";
+    private string solucion = "";
+    private string recomendaciones = "";
+    private bool mostrarFormularioNoResuelto = false;
+    private string razonNoResolucion = "";
+    private string diagnosticoExperto = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        usuarioId = user.GetUserId();
+        if (usuarioId is null)
+        {
+            errorMessage = "No se pudo identificar al usuario.";
+            isLoading = false;
+            return;
+        }
+
+        await CargarIncidente();
+        isLoading = false;
+    }
+
+    private async Task CargarIncidente()
+    {
+        try
+        {
+            incidente = await IncidenteService.GetIncidenteByIdAsync(IncidenteId);
+            
+            if (incidente == null)
+            {
+                errorMessage = "Incidente no encontrado";
+                return;
+            }
+
+            var asignaciones = await AsignacionService.GetAsignacionesByIncidenteAsync(IncidenteId);
+            historialAsignaciones = asignaciones.ToList();
+
+            asignacionActual = historialAsignaciones
+                .Where(a => a.UsuarioAsignadoID == usuarioId && a.TipoAsignacion == "Experto")
+                .OrderByDescending(a => a.FechaAsignacion)
+                .FirstOrDefault();
+
+            Console.WriteLine($"[TecnicoExperto] AsignacionActual encontrada: {asignacionActual != null}");
+            if (asignacionActual != null)
+            {
+                Console.WriteLine($"[TecnicoExperto] Estado asignación: {asignacionActual.EstadoAsignacion}");
+                Console.WriteLine($"[TecnicoExperto] Tipo asignación: {asignacionActual.TipoAsignacion}");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar incidente: {ex.Message}";
+        }
+    }
+
+    private async Task AceptarAsignacion()
+    {
+        if (asignacionActual == null || !usuarioId.HasValue) return;
+
+        isSubmitting = true;
+        try
+        {
+            await AsignacionService.AceptarAsignacionAsync(asignacionActual.AsignacionID, usuarioId.Value);
+            
+            Snackbar.Add("Has aceptado el incidente. Puedes comenzar a trabajar.", Severity.Success);
+            await CargarIncidente();
+            StateHasChanged(); // Forzar actualización de la UI
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al aceptar asignación: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task RegistrarSolucion()
+    {
+        if (asignacionActual == null || string.IsNullOrWhiteSpace(diagnostico) || string.IsNullOrWhiteSpace(solucion))
+        {
+            Snackbar.Add("Completa el diagnóstico y la solución", Severity.Warning);
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            var notasCompletas = $"DIAGNÓSTICO:\n{diagnostico}\n\nSOLUCIÓN APLICADA:\n{solucion}";
+            if (!string.IsNullOrWhiteSpace(recomendaciones))
+            {
+                notasCompletas += $"\n\nRECOMENDACIONES:\n{recomendaciones}";
+            }
+
+            await AsignacionService.CompletarAsignacionAsync(asignacionActual.AsignacionID, notasCompletas);
+            await IncidenteService.ActualizarEstadoAsync(new ActualizarEstadoDto
+            {
+                IncidenteID = IncidenteId,
+                Estado = "Resuelto"
+            });
+
+            if (incidente!.UsuarioReportadorID.HasValue)
+            {
+                await NotificacionService.CrearNotificacionAsync(
+                    incidente.UsuarioReportadorID.Value,
+                    IncidenteId,
+                    $"✓ Incidente {incidente.CodigoIncidente} Resuelto",
+                    $"El técnico experto ha resuelto tu incidente: {incidente.Titulo}",
+                    "Resolucion"
+                );
+            }
+
+            var admins = await UsuarioRepository.GetByRolAsync("Administrativo");
+            foreach (var admin in admins)
+            {
+                await NotificacionService.CrearNotificacionAsync(
+                    admin.UsuarioID,
+                    IncidenteId,
+                    $"Incidente {incidente.CodigoIncidente} Resuelto por Experto",
+                    $"El técnico experto ha resuelto el incidente escalado: {incidente.Titulo}",
+                    "Resolucion"
+                );
+            }
+
+            Snackbar.Add("¡Solución registrada exitosamente!", Severity.Success);
+            await Task.Delay(1500);
+            Navigation.NavigateTo("/tecnico-experto/mis-tareas");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al registrar solución: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void MostrarFormularioNoResuelto()
+    {
+        mostrarFormularioNoResuelto = true;
+        razonNoResolucion = "";
+        diagnosticoExperto = "";
+    }
+
+    private async Task EscalarAProveedor()
+    {
+        if (asignacionActual == null || string.IsNullOrWhiteSpace(razonNoResolucion))
+        {
+            Snackbar.Add("Debes explicar por qué no puedes resolver el incidente", Severity.Warning);
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            var notasCompletas = $"EXPERTO NO PUDO RESOLVER\n\n" +
+                               $"RAZÓN:\n{razonNoResolucion}\n\n";
+            
+            if (!string.IsNullOrWhiteSpace(diagnosticoExperto))
+            {
+                notasCompletas += $"DIAGNÓSTICO REALIZADO:\n{diagnosticoExperto}\n\n";
+            }
+            
+            notasCompletas += "Estado: Requiere intervención del proveedor externo.";
+
+            // Completar la asignación del experto con las notas
+            await AsignacionService.CompletarAsignacionAsync(asignacionActual.AsignacionID, notasCompletas);
+
+            // Cambiar el estado del incidente a "Requiere Proveedor"
+            await IncidenteService.ActualizarEstadoAsync(new ActualizarEstadoDto
+            {
+                IncidenteID = IncidenteId,
+                Estado = "Requiere Proveedor",
+                Comentarios = "El técnico experto no pudo resolver. Requiere contacto con proveedor."
+            });
+
+            // Notificar a todos los administradores
+            var admins = await UsuarioRepository.GetByRolAsync("Administrativo");
+            foreach (var admin in admins)
+            {
+                await NotificacionService.CrearNotificacionAsync(
+                    admin.UsuarioID,
+                    IncidenteId,
+                    $"⚠️ Incidente Requiere Proveedor - {incidente!.CodigoIncidente}",
+                    $"El técnico experto no pudo resolver el incidente '{incidente.Titulo}'. Se requiere contactar al proveedor externo. Revisa los detalles para gestionar.",
+                    "EscalamientoProveedor"
+                );
+            }
+
+            // Notificar al estudiante
+            if (incidente!.UsuarioReportadorID.HasValue)
+            {
+                await NotificacionService.CrearNotificacionAsync(
+                    incidente.UsuarioReportadorID.Value,
+                    IncidenteId,
+                    $"Incidente {incidente.CodigoIncidente} - Escalado a Proveedor",
+                    $"Tu incidente '{incidente.Titulo}' requiere atención del proveedor. El administrador gestionará el seguimiento y te mantendrá informado.",
+                    "EscalamientoProveedor"
+                );
+            }
+
+            Snackbar.Add("Incidente escalado al proveedor. Los administradores han sido notificados.", Severity.Success);
+            await Task.Delay(1500);
+            Navigation.NavigateTo("/tecnico-experto/mis-tareas");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al escalar incidente: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/tecnico-experto/mis-tareas");
+    }
+
+    private Color GetEstadoColor(string? estado) => estado?.ToLower() switch
+    {
+        "abierto" => Color.Info,
+        "asignado" => Color.Primary,
+        "asignado a experto" => Color.Warning,
+        "requiere experto" => Color.Error,
+        "requiere proveedor" => Color.Error,
+        "en progreso" => Color.Warning,
+        "resuelto" => Color.Success,
+        "cerrado" => Color.Dark,
+        _ => Color.Default
+    };
+
+    private Color GetPrioridadColor(string? prioridad) => prioridad?.ToLower() switch
+    {
+        "alta" => Color.Error,
+        "media" => Color.Warning,
+        "baja" => Color.Success,
+        _ => Color.Default
+    };
+
+    private Color GetEstadoAsignacionColor(string? estado) => estado?.ToLower() switch
+    {
+        "pendiente" => Color.Warning,
+        "en progreso" => Color.Info,
+        "completado" => Color.Success,
+        _ => Color.Default
+    };
+}

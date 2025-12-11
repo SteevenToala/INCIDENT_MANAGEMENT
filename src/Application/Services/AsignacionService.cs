@@ -66,7 +66,7 @@ public class AsignacionService : IAsignacionService
         if (asignacion.UsuarioAsignadoID != usuarioId)
             throw new Exception("No tienes permiso para aceptar esta asignación");
 
-        asignacion.EstadoAsignacion = "Aceptado";
+        asignacion.EstadoAsignacion = "En Progreso";
         asignacion.FechaAceptacion = DateTime.Now;
 
         await _asignacionRepository.UpdateAsync(asignacion);

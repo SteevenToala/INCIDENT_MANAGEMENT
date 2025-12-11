@@ -125,6 +125,7 @@
                 "administrativo" => new MenuItem("Panel", "/administrativo/home", Icons.Material.Filled.Dashboard, true),
                 "laboratorista" when esAsignador => new MenuItem("Panel Supervisor", "/laboratorista/home", Icons.Material.Filled.SupervisorAccount, true),
                 "laboratorista" => new MenuItem("Panel Técnico", "/laboratorista/home", Icons.Material.Filled.Build, true),
+                "tecnicoexperto" => new MenuItem("Panel Experto", "/tecnico-experto/mis-tareas", Icons.Material.Filled.Engineering, true),
                 _ => new MenuItem("Inicio", "/", Icons.Material.Filled.Home, true)
             },
             new MenuItem("Notificaciones", "/notificaciones", Icons.Material.Filled.Notifications)
@@ -189,6 +190,13 @@
                 new MenuSection("Recursos", new[]
                 {
                     new MenuItem("Base de conocimiento", "/laboratorista/base-conocimiento", Icons.Material.Filled.MenuBook)
+                })
+            },
+            "tecnicoexperto" => new[]
+            {
+                new MenuSection("Incidentes Escalados", new[]
+                {
+                    new MenuItem("Mis tareas", "/tecnico-experto/mis-tareas", Icons.Material.Filled.Engineering)
                 })
             },
             _ => Array.Empty<MenuSection>()
