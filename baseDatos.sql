@@ -336,7 +336,7 @@ VALUES
 ('admin1@uni.edu', 'Pedro Morales', 'pass123', 3, 1, 0),
 ('lab1@uni.edu', 'Carlos López', 'pass123', 4, 1, 1),
 ('lab2@uni.edu', 'Ana Gómez', 'pass123', 4, 2, 1),
-('lab3@uni.edu', 'Roberto Díaz', 'pass123', 4, 1, 0);--USUARIO 
+('lab3@uni.edu', 'Roberto Díaz', 'pass123', 4, 1, 0);
 GO
 
 -- =========================
@@ -452,9 +452,9 @@ GO
 -- =========================
 INSERT INTO ContratosSLA (ServicioID, NombreContrato, Prioridad, TiempoRespuesta, TiempoResolucion, ProveedorUsuarioID)
 VALUES
-(1, 'SLA-Hardware', 'Alta', 2, 24, 9),
-(2, 'SLA-Software', 'Media', 4, 48, 9),
-(3, 'SLA-Mantenimiento', 'Baja', 8, 72, 9);
+(1, 'SLA-Hardware', 'Alta', 2, 24, 6),
+(2, 'SLA-Software', 'Media', 4, 48, 7),
+(3, 'SLA-Mantenimiento', 'Baja', 8, 72, 8);
 GO
 
 -- =========================
