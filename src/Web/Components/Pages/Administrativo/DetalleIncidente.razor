@@ -116,21 +116,55 @@
                             @if (incidente.Estado != "Cerrado" && incidente.Estado != "Resuelto")
                             {
                                 <MudDivider Class="my-4" />
-                                <MudText Typo="Typo.h6" Class="mb-3">
-                                    <MudIcon Icon="@Icons.Material.Filled.AssignmentInd" Class="me-2" />
-                                    Asignar Incidente a Laboratorista
-                                </MudText>
+                                
+                                @if (incidente.Estado == "Requiere Experto")
+                                {
+                                    <MudAlert Severity="Severity.Warning" Class="mb-3">
+                                        <strong>⚠️ Este incidente requiere un Técnico Experto</strong>
+                                        <div>El laboratorista indicó que no puede resolver este incidente. Asigna a un experto según el tipo de servicio.</div>
+                                    </MudAlert>
+                                    
+                                    <MudText Typo="Typo.h6" Class="mb-3">
+                                        <MudIcon Icon="@Icons.Material.Filled.Engineering" Class="me-2" />
+                                        Asignar a Técnico Experto
+                                    </MudText>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.h6" Class="mb-3">
+                                        <MudIcon Icon="@Icons.Material.Filled.AssignmentInd" Class="me-2" />
+                                        Asignar Incidente a Laboratorista
+                                    </MudText>
+                                }
                                 
                                 <MudStack Spacing="3">
                                     <div>
-                                        <label for="tecnico-select"><strong>Laboratorista</strong></label>
-                                        <select id="tecnico-select" class="form-control" @bind="tecnicoSeleccionadoId" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">
-                                            <option value="">-- Seleccionar Laboratorista --</option>
-                                            @foreach (var tecnico in tecnicos)
+                                        @if (incidente.Estado == "Requiere Experto")
+                                        {
+                                            <label for="tecnico-select"><strong>Técnico Experto</strong></label>
+                                            <select id="tecnico-select" class="form-control" @bind="tecnicoSeleccionadoId" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">
+                                                <option value="">-- Seleccionar Experto --</option>
+                                                @foreach (var tecnico in expertos)
+                                                {
+                                                    <option value="@tecnico.UsuarioID">@tecnico.NombreCompleto - @tecnico.Email</option>
+                                                }
+                                            </select>
+                                            @if (!expertos.Any())
                                             {
-                                                <option value="@tecnico.UsuarioID">@tecnico.NombreCompleto</option>
+                                                <MudText Typo="Typo.caption" Color="Color.Error">No hay técnicos expertos disponibles</MudText>
                                             }
-                                        </select>
+                                        }
+                                        else
+                                        {
+                                            <label for="tecnico-select"><strong>Laboratorista</strong></label>
+                                            <select id="tecnico-select" class="form-control" @bind="tecnicoSeleccionadoId" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">
+                                                <option value="">-- Seleccionar Laboratorista --</option>
+                                                @foreach (var tecnico in tecnicos)
+                                                {
+                                                    <option value="@tecnico.UsuarioID">@tecnico.NombreCompleto</option>
+                                                }
+                                            </select>
+                                        }
                                     </div>
 
                                     <div>
@@ -190,6 +224,7 @@
     private IncidenteDto? incidente;
     private AsignacionDto? asignacionActual;
     private List<Usuario> tecnicos = new();
+    private List<Usuario> expertos = new();
     private string tecnicoSeleccionadoId = "";
     private string tipoAsignacion = "";
     private string notasAsignacion = "";
@@ -263,6 +298,9 @@
         {
             var usuariosLab = await UsuarioRepository.GetByRolAsync("Laboratorista");
             tecnicos = usuariosLab.ToList();
+            
+            var usuariosExp = await UsuarioRepository.GetByRolAsync("TecnicoExperto");
+            expertos = usuariosExp.ToList();
         }
         catch (Exception ex)
         {
@@ -277,31 +315,46 @@
         isSubmitting = true;
         try
         {
+            var esExperto = incidente.Estado == "Requiere Experto";
+            
             var createDto = new CreateAsignacionDto
             {
                 IncidenteID = incidente.IncidenteID,
                 UsuarioAsignadoID = int.Parse(tecnicoSeleccionadoId),
-                TipoAsignacion = tipoAsignacion,
-                Notas = notasAsignacion
+                TipoAsignacion = esExperto ? "Experto" : tipoAsignacion,
+                Notas = esExperto ? $"Asignado a técnico experto. {notasAsignacion}" : notasAsignacion
             };
 
             await AsignacionService.AsignarIncidenteAsync(createDto);
+            
+            // Si es experto, actualizar el estado a "Asignado a Experto"
+            if (esExperto)
+            {
+                var updateDto = new ActualizarEstadoDto
+                {
+                    IncidenteID = incidente.IncidenteID,
+                    Estado = "Asignado a Experto",
+                    Comentarios = "Incidente asignado a técnico experto"
+                };
+                await IncidenteService.ActualizarEstadoAsync(updateDto);
+            }
             
             // Notificar al estudiante
             if (incidente.UsuarioReportadorID.HasValue)
             {
                 var tecnico = await UsuarioRepository.GetByIdAsync(int.Parse(tecnicoSeleccionadoId));
+                var tipoTecnico = esExperto ? "técnico experto" : "técnico";
                 await NotificacionService.CrearNotificacionAsync(
                     incidente.UsuarioReportadorID.Value,
                     incidente.IncidenteID,
-                    "Incidente Asignado",
-                    $"Tu incidente '{incidente.CodigoIncidente}' ha sido asignado al técnico {tecnico?.NombreCompleto}. Pronto comenzará a trabajar en él.",
+                    esExperto ? "Incidente Asignado a Experto" : "Incidente Asignado",
+                    $"Tu incidente '{incidente.CodigoIncidente}' ha sido asignado al {tipoTecnico} {tecnico?.NombreCompleto}. Pronto comenzará a trabajar en él.",
                     "Asignacion",
                     $"/estudiante/incidencias/detalle?id={incidente.IncidenteID}"
                 );
             }
             
-            Snackbar.Add("Incidente asignado exitosamente", Severity.Success);
+            Snackbar.Add($"Incidente asignado exitosamente al {(esExperto ? "técnico experto" : "laboratorista")}", Severity.Success);
             await CargarIncidente();
             
             // Limpiar formulario

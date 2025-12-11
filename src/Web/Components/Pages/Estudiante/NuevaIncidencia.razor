@@ -49,6 +49,15 @@
                             }
                         </select>
 
+                        <label for="servicio-select">Tipo de Servicio</label>
+                        <select id="servicio-select" class="form-control" @bind="formModel.ServicioID" required>
+                            <option value="">-- Selecciona el tipo de servicio --</option>
+                            @foreach (var servicio in servicios)
+                            {
+                                <option value="@servicio.Id">@servicio.Nombre - @servicio.Descripcion</option>
+                            }
+                        </select>
+
                     <MudTextField @bind-Value="formModel.Titulo"
                                   Label="Título"
                                   Id="titulo-field"
@@ -109,6 +118,7 @@
     private NuevaIncidenciaModel formModel = new();
     private List<ComputadoraOption> computadoras = new();
     private List<LaboratorioOption> laboratorios = new();
+    private List<ServicioOption> servicios = new();
     private int? laboratorioSeleccionadoId;
     // MudSelect no necesita propiedad intermedia
     private bool isLoading = true;
@@ -146,6 +156,8 @@
         try
         {
             computadoras = (await EstudiantePortalService.GetComputadorasAsync(userId.Value)).ToList();
+            servicios = (await EstudiantePortalService.GetServiciosAsync()).ToList();
+            
             // Extraer laboratorios únicos
             laboratorios = computadoras
                 .GroupBy(c => c.LaboratorioId)
@@ -154,6 +166,7 @@
                 .ToList();
 
             Console.WriteLine($"[NuevaIncidencia] Computadoras cargadas: {computadoras.Count}");
+            Console.WriteLine($"[NuevaIncidencia] Servicios cargados: {servicios.Count}");
             foreach (var comp in computadoras)
             {
                 Console.WriteLine($"  - ID: {comp.Id}, Nombre: {comp.Nombre}, Desc: {comp.Descripcion}");
@@ -162,6 +175,10 @@
             if (!computadoras.Any())
             {
                 loadError = "Aún no hay computadoras configuradas. Contacta al administrador.";
+            }
+            if (!servicios.Any())
+            {
+                loadError = "Aún no hay servicios configurados. Contacta al administrador.";
             }
         }
         catch (Exception ex)
@@ -193,6 +210,12 @@ public class LaboratorioOption
         if (!formModel.ComputadoraID.HasValue)
         {
             Snackbar.Add("Debes seleccionar una computadora", Severity.Warning);
+            return;
+        }
+
+        if (!formModel.ServicioID.HasValue)
+        {
+            Snackbar.Add("Debes seleccionar un tipo de servicio", Severity.Warning);
             return;
         }
 

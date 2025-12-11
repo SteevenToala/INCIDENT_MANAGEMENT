@@ -13,6 +13,7 @@ public interface IEstudiantePortalService
     Task<IncidenteDto> CrearIncidenteAsync(NuevaIncidenciaModel model, int usuarioId);
     Task<IReadOnlyList<BaseConocimientoDto>> BuscarBaseConocimientoAsync(string? filtro);
     Task<IReadOnlyList<ComputadoraOption>> GetComputadorasAsync(int usuarioId);
+    Task<IReadOnlyList<ServicioOption>> GetServiciosAsync();
 }
 
 public class EstudiantePortalService : IEstudiantePortalService
@@ -21,17 +22,20 @@ public class EstudiantePortalService : IEstudiantePortalService
     private readonly IBaseConocimientoService _baseConocimientoService;
     private readonly IComputadoraRepository _computadoraRepository;
     private readonly IUsuarioRepository _usuarioRepository;
+    private readonly ICatalogoServicioRepository _catalogoServicioRepository;
 
     public EstudiantePortalService(
         IIncidenteService incidenteService,
         IBaseConocimientoService baseConocimientoService,
         IComputadoraRepository computadoraRepository,
-        IUsuarioRepository usuarioRepository)
+        IUsuarioRepository usuarioRepository,
+        ICatalogoServicioRepository catalogoServicioRepository)
     {
         _incidenteService = incidenteService;
         _baseConocimientoService = baseConocimientoService;
         _computadoraRepository = computadoraRepository;
         _usuarioRepository = usuarioRepository;
+        _catalogoServicioRepository = catalogoServicioRepository;
     }
 
     public async Task<EstudianteDashboardModel> GetDashboardAsync(int usuarioId)
@@ -71,6 +75,7 @@ public class EstudiantePortalService : IEstudiantePortalService
         var dto = new CreateIncidenteDto
         {
             ComputadoraID = model.ComputadoraID!.Value,
+            ServicioID = model.ServicioID!.Value,
             Titulo = model.Titulo,
             Descripcion = model.Descripcion,
             Prioridad = model.Prioridad
@@ -112,6 +117,22 @@ public class EstudiantePortalService : IEstudiantePortalService
                 LaboratorioNombre = c.Laboratorio?.Nombre ?? "Sin laboratorio"
             })
             .OrderBy(c => c.Nombre)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<ServicioOption>> GetServiciosAsync()
+    {
+        var servicios = await _catalogoServicioRepository.GetAllAsync();
+
+        return servicios
+            .Where(s => s.Estado)
+            .Select(s => new ServicioOption
+            {
+                Id = s.ServicioID,
+                Nombre = s.Nombre,
+                Descripcion = s.Descripcion
+            })
+            .OrderBy(s => s.Nombre)
             .ToList();
     }
 }

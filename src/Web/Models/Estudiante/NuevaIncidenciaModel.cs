@@ -8,6 +8,10 @@ public class NuevaIncidenciaModel
     [Display(Name = "Computadora")]
     public int? ComputadoraID { get; set; }
 
+    [Required(ErrorMessage = "Selecciona un tipo de servicio")]
+    [Display(Name = "Tipo de Servicio")]
+    public int? ServicioID { get; set; }
+
     [Required(ErrorMessage = "Ingresa un título")]
     [StringLength(200, ErrorMessage = "El título es demasiado largo")]
     public string Titulo { get; set; } = string.Empty;

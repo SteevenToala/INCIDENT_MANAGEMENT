@@ -146,6 +146,11 @@
                                 <MudIcon Icon="@Icons.Material.Filled.Assignment" Class="me-2" />
                                 Completar Trabajo
                             </MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Large"
+                                       OnClick="() => mostrarNoPuedeResolver = true" Disabled="isSubmitting">
+                                <MudIcon Icon="@Icons.Material.Filled.Error" Class="me-2" />
+                                No Puedo Resolver
+                            </MudButton>
                             <MudButton Variant="Variant.Outlined" Color="Color.Warning" Size="Size.Large"
                                        OnClick="() => mostrarReasignacion = true" Disabled="isSubmitting">
                                 <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Class="me-2" />
@@ -200,6 +205,49 @@
                                         </MudButton>
                                         <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Medium"
                                                    OnClick="() => mostrarReasignacion = false" Disabled="isSubmitting">
+                                            Cancelar
+                                        </MudButton>
+                                    </MudStack>
+                                </MudStack>
+                            </MudPaper>
+                        }
+
+                        @if (mostrarNoPuedeResolver)
+                        {
+                            <MudPaper Elevation="1" Class="pa-4 mt-4" Style="background-color: #ffebee;">
+                                <MudText Typo="Typo.h6" Class="mb-3">
+                                    <MudIcon Icon="@Icons.Material.Filled.Error" Class="me-2" />
+                                    Indicar que No Se Puede Resolver
+                                </MudText>
+                                <MudAlert Severity="Severity.Warning" Class="mb-3">
+                                    <strong>⚠️ Importante:</strong> Al marcar este incidente como "No puedo resolver", se notificará al personal administrativo para que lo asigne a un técnico experto.
+                                </MudAlert>
+
+                                <MudStack Spacing="3">
+                                    <MudTextField @bind-Value="noPuedeResolverForm.Motivo"
+                                                  Label="Motivo por el cual no puedes resolver"
+                                                  Variant="Variant.Outlined"
+                                                  Lines="4"
+                                                  Required="true"
+                                                  Placeholder="Explica en detalle por qué no puedes resolver este incidente (ej: requiere conocimientos especializados, herramientas específicas, etc.)..." />
+
+                                    <MudStack Direction="Row" Spacing="2">
+                                        <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Medium"
+                                                   OnClick="MarcarComoNoPuedeResolver" 
+                                                   Disabled="isSubmitting || string.IsNullOrEmpty(noPuedeResolverForm.Motivo)">
+                                            @if (isSubmitting)
+                                            {
+                                                <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                                                <span>Procesando...</span>
+                                            }
+                                            else
+                                            {
+                                                <MudIcon Icon="@Icons.Material.Filled.Error" Class="me-2" />
+                                                <span>Confirmar - No Puedo Resolver</span>
+                                            }
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Medium"
+                                                   OnClick="() => mostrarNoPuedeResolver = false" Disabled="isSubmitting">
                                             Cancelar
                                         </MudButton>
                                     </MudStack>
@@ -499,6 +547,8 @@
     private int? userId;
     private bool mostrarReasignacion = false;
     private ReasignacionFormModel reasignacionForm = new();
+    private bool mostrarNoPuedeResolver = false;
+    private NoPuedeResolverFormModel noPuedeResolverForm = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -912,6 +962,81 @@
     {
         public string? TecnicoSeleccionadoId { get; set; }
         public string? Motivo { get; set; }
+    }
+
+    public class NoPuedeResolverFormModel
+    {
+        public string? Motivo { get; set; }
+    }
+
+    private async Task MarcarComoNoPuedeResolver()
+    {
+        if (incidente == null || userId == null || string.IsNullOrEmpty(noPuedeResolverForm.Motivo))
+            return;
+
+        isSubmitting = true;
+        try
+        {
+            // Completar la asignación actual indicando que no se pudo resolver
+            if (asignacionActual != null)
+            {
+                var notasNoPuedeResolver = $"El laboratorista no pudo resolver. Motivo: {noPuedeResolverForm.Motivo}. Requiere asignación a técnico experto.";
+                await AsignacionService.CompletarAsignacionAsync(asignacionActual.AsignacionID, notasNoPuedeResolver);
+            }
+
+            // Actualizar el estado del incidente a "Requiere Experto"
+            var updateDto = new ActualizarEstadoDto
+            {
+                IncidenteID = incidente.IncidenteID,
+                Estado = "Requiere Experto",
+                Comentarios = $"El laboratorista indicó que no puede resolver. Motivo: {noPuedeResolverForm.Motivo}"
+            };
+            await IncidenteService.ActualizarEstadoAsync(updateDto);
+
+            // Notificar a todos los usuarios administrativos
+            var usuariosAdmin = await UsuarioRepository.GetByRolAsync("Administrativo");
+            foreach (var admin in usuariosAdmin)
+            {
+                await NotificacionService.CrearNotificacionAsync(
+                    admin.UsuarioID,
+                    incidente.IncidenteID,
+                    "⚠️ Incidente Requiere Técnico Experto",
+                    $"El incidente '{incidente.CodigoIncidente}' no pudo ser resuelto por el laboratorista. Motivo: {noPuedeResolverForm.Motivo}. Por favor, asigne a un técnico experto según el tipo de servicio.",
+                    "RequiereExperto",
+                    $"/administrativo/incidencias/detalle?id={incidente.IncidenteID}"
+                );
+            }
+
+            // Notificar al estudiante
+            if (incidente.UsuarioReportadorID.HasValue)
+            {
+                await NotificacionService.CrearNotificacionAsync(
+                    incidente.UsuarioReportadorID.Value,
+                    incidente.IncidenteID,
+                    "Incidente Escalado a Experto",
+                    $"Tu incidente '{incidente.CodigoIncidente}' requiere atención especializada y será asignado a un técnico experto pronto.",
+                    "Escalado",
+                    $"/estudiante/incidencias/detalle?id={incidente.IncidenteID}"
+                );
+            }
+
+            Snackbar.Add("Incidente marcado como 'Requiere Experto'. El personal administrativo ha sido notificado.", Severity.Info);
+            
+            // Limpiar formulario
+            noPuedeResolverForm = new NoPuedeResolverFormModel();
+            mostrarNoPuedeResolver = false;
+            
+            await CargarIncidencia();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al marcar incidente: {ex.Message}", Severity.Error);
+            Console.WriteLine($"[ActualizarIncidencia] Error: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
     }
 
     private async Task ReasignarIncidente()
