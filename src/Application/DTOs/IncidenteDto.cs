@@ -24,6 +24,7 @@ public class IncidenteDto
 public class CreateIncidenteDto
 {
     public int ComputadoraID { get; set; }
+    public int ServicioID { get; set; }
     public string Titulo { get; set; } = string.Empty;
     public string Descripcion { get; set; } = string.Empty;
     public string Prioridad { get; set; } = "Media";

@@ -104,7 +104,10 @@ public class IncidenteRepository : IIncidenteRepository
             .Include(i => i.Facultad)
             .Include(i => i.Asignaciones)
                 .ThenInclude(a => a.UsuarioAsignado)
-            .Where(i => i.FacultadID == facultadId && !i.Eliminado)
+            .Where(i => !i.Eliminado && (
+                i.FacultadID == facultadId || 
+                (i.Computadora != null && i.Computadora.Laboratorio != null && i.Computadora.Laboratorio.FacultadID == facultadId)
+            ))
             .OrderByDescending(i => i.FechaCreacion)
             .ToListAsync();
     }
