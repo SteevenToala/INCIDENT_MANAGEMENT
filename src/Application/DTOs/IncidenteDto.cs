@@ -12,6 +12,8 @@ public class IncidenteDto
     public DateTime FechaCreacion { get; set; }
     public DateTime? FechaResolucion { get; set; }
     public int? TecnicoID { get; set; }
+    public int? ServicioID { get; set; }
+    public string? ServicioNombre { get; set; }
     public string ComputadoraNombre { get; set; } = string.Empty;
     public string LaboratorioNombre { get; set; } = string.Empty;
     public string UsuarioReportador { get; set; } = string.Empty;

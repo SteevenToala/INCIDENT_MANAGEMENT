@@ -269,6 +269,18 @@
                                 }
                             </MudAlert>
                         }
+                        else if (incidente.Estado == "Requiere Experto" || (asignacionActual.Notas != null && asignacionActual.Notas.Contains("no pudo resolver")))
+                        {
+                            <!-- Incidente escalado a experto -->
+                            <MudAlert Severity="Severity.Warning">
+                                <strong>⚠️ Incidente Escalado a Técnico Experto</strong>
+                                <div>Has indicado que no puedes resolver este incidente. El personal administrativo ha sido notificado para asignarlo a un técnico experto.</div>
+                                @if (!string.IsNullOrEmpty(asignacionActual.Notas))
+                                {
+                                    <div class="mt-2"><em>@asignacionActual.Notas</em></div>
+                                }
+                            </MudAlert>
+                        }
                         else
                         {
                             <!-- Paso 4: Trabajo Completado - Registrar solución -->

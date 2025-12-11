@@ -49,6 +49,12 @@
                             <MudChip Icon="@Icons.Material.Filled.Flag" Color="@GetPrioridadColor(incidente.Prioridad)" Size="Size.Small">
                                 Prioridad: @incidente.Prioridad
                             </MudChip>
+                            @if (!string.IsNullOrEmpty(incidente.ServicioNombre))
+                            {
+                                <MudChip Icon="@Icons.Material.Filled.Build" Color="Color.Primary" Size="Size.Small">
+                                    Servicio: @incidente.ServicioNombre
+                                </MudChip>
+                            }
                             <MudChip Icon="@Icons.Material.Filled.Computer" Size="Size.Small">
                                 @incidente.ComputadoraNombre
                             </MudChip>
@@ -106,6 +112,67 @@
                                     </MudPaper>
                                 </div>
                             }
+
+                            @* Si el incidente requiere experto, mostrar formulario de asignación *@
+                            @if (incidente.Estado == "Requiere Experto" && asignacionActual.EstadoAsignacion == "Completado")
+                            {
+                                var expertosDisponibles = ObtenerExpertosPorServicio();
+                                
+                                <MudDivider Class="my-4" />
+                                
+                                <MudAlert Severity="Severity.Warning" Class="mb-3">
+                                    <strong>⚠️ Este incidente requiere un Técnico Experto</strong>
+                                    <div>El laboratorista indicó que no puede resolver este incidente. Asigna a un experto según el tipo de servicio.</div>
+                                </MudAlert>
+                                
+                                <MudText Typo="Typo.h6" Class="mb-3">
+                                    <MudIcon Icon="@Icons.Material.Filled.Engineering" Class="me-2" />
+                                    Asignar a Técnico Experto
+                                </MudText>
+
+                                <MudStack Spacing="3">
+                                    <div>
+                                        <label for="tecnico-experto-select"><strong>Técnico Experto</strong></label>
+                                        <select id="tecnico-experto-select" class="form-control" @bind="tecnicoSeleccionadoId" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">
+                                            <option value="">-- Seleccionar Experto --</option>
+                                            @foreach (var tecnico in expertosDisponibles)
+                                            {
+                                                <option value="@tecnico.UsuarioID">@tecnico.NombreCompleto - @tecnico.Email</option>
+                                            }
+                                        </select>
+                                        @if (incidente.ServicioNombre != null)
+                                        {
+                                            <MudText Typo="Typo.caption" Color="Color.Info" Class="mt-2">
+                                                🔍 Mostrando expertos para: @incidente.ServicioNombre
+                                            </MudText>
+                                        }
+                                        @if (!expertosDisponibles.Any())
+                                        {
+                                            <MudText Typo="Typo.caption" Color="Color.Error">No hay técnicos expertos disponibles para este servicio</MudText>
+                                        }
+                                    </div>
+
+                                    <MudTextField @bind-Value="notasAsignacion"
+                                                  Label="Notas de Asignación (Opcional)"
+                                                  Variant="Variant.Outlined"
+                                                  Lines="3"
+                                                  Placeholder="Instrucciones o comentarios para el técnico experto..." />
+
+                                    <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Large"
+                                               OnClick="AsignarIncidente" Disabled="isSubmitting || string.IsNullOrEmpty(tecnicoSeleccionadoId)">
+                                        @if (isSubmitting)
+                                        {
+                                            <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="me-2" />
+                                            <span>Asignando...</span>
+                                        }
+                                        else
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.Engineering" Class="me-2" />
+                                            <span>Asignar a Experto</span>
+                                        }
+                                    </MudButton>
+                                </MudStack>
+                            }
                         }
                         else
                         {
@@ -141,17 +208,25 @@
                                     <div>
                                         @if (incidente.Estado == "Requiere Experto")
                                         {
+                                            var expertosServicio = ObtenerExpertosPorServicio();
+                                            
                                             <label for="tecnico-select"><strong>Técnico Experto</strong></label>
                                             <select id="tecnico-select" class="form-control" @bind="tecnicoSeleccionadoId" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">
                                                 <option value="">-- Seleccionar Experto --</option>
-                                                @foreach (var tecnico in expertos)
+                                                @foreach (var tecnico in expertosServicio)
                                                 {
                                                     <option value="@tecnico.UsuarioID">@tecnico.NombreCompleto - @tecnico.Email</option>
                                                 }
                                             </select>
-                                            @if (!expertos.Any())
+                                            @if (incidente.ServicioNombre != null)
                                             {
-                                                <MudText Typo="Typo.caption" Color="Color.Error">No hay técnicos expertos disponibles</MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Info" Class="mt-2">
+                                                    🔍 Mostrando expertos especializados en: @incidente.ServicioNombre
+                                                </MudText>
+                                            }
+                                            @if (!expertosServicio.Any())
+                                            {
+                                                <MudText Typo="Typo.caption" Color="Color.Error">No hay técnicos expertos disponibles para este servicio</MudText>
                                             }
                                         }
                                         else
@@ -298,14 +373,77 @@
         {
             var usuariosLab = await UsuarioRepository.GetByRolAsync("Laboratorista");
             tecnicos = usuariosLab.ToList();
+            Console.WriteLine($"[DetalleIncidente] Laboratoristas cargados: {tecnicos.Count}");
             
             var usuariosExp = await UsuarioRepository.GetByRolAsync("TecnicoExperto");
             expertos = usuariosExp.ToList();
+            Console.WriteLine($"[DetalleIncidente] Expertos cargados: {expertos.Count}");
+            
+            foreach (var exp in expertos)
+            {
+                Console.WriteLine($"[DetalleIncidente] Experto: {exp.NombreCompleto} - {exp.Email}");
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[DetalleIncidente] Error al cargar técnicos: {ex.Message}");
         }
+    }
+
+    private List<Usuario> ObtenerExpertosPorServicio()
+    {
+        Console.WriteLine($"[DetalleIncidente] ObtenerExpertosPorServicio llamado");
+        Console.WriteLine($"[DetalleIncidente] incidente null? {incidente == null}");
+        Console.WriteLine($"[DetalleIncidente] ServicioNombre: {incidente?.ServicioNombre}");
+        Console.WriteLine($"[DetalleIncidente] expertos null? {expertos == null}");
+        Console.WriteLine($"[DetalleIncidente] expertos.Count: {expertos?.Count ?? 0}");
+        
+        if (incidente?.ServicioNombre == null || expertos == null || !expertos.Any())
+        {
+            Console.WriteLine($"[DetalleIncidente] Retornando lista vacía - validación inicial falló");
+            return new List<Usuario>();
+        }
+
+        var servicio = incidente.ServicioNombre.ToLower();
+        Console.WriteLine($"[DetalleIncidente] Filtrando expertos para servicio: '{servicio}'");
+
+        // Filtrar expertos según el tipo de servicio
+        var expertosServicio = expertos.Where(e =>
+        {
+            var email = e.Email.ToLower();
+            Console.WriteLine($"[DetalleIncidente] Evaluando experto: {e.NombreCompleto} ({email})");
+
+            // Reparación de Hardware -> expertos de hardware
+            if (servicio.Contains("hardware") || servicio.Contains("reparación"))
+            {
+                var resultado = email.Contains("hardware");
+                Console.WriteLine($"[DetalleIncidente] Servicio de hardware detectado. Resultado: {resultado}");
+                return resultado;
+            }
+
+            // Instalación de Software -> expertos de software
+            if (servicio.Contains("software") || servicio.Contains("instalación"))
+            {
+                var resultado = email.Contains("software");
+                Console.WriteLine($"[DetalleIncidente] Servicio de software detectado. Resultado: {resultado}");
+                return resultado;
+            }
+
+            // Mantenimiento -> expertos de redes/mantenimiento
+            if (servicio.Contains("mantenimiento") || servicio.Contains("preventivo"))
+            {
+                var resultado = email.Contains("redes") || email.Contains("mantenimiento");
+                Console.WriteLine($"[DetalleIncidente] Servicio de mantenimiento detectado. Resultado: {resultado}");
+                return resultado;
+            }
+
+            // Si no coincide con ningún servicio conocido, no mostrar
+            Console.WriteLine($"[DetalleIncidente] No coincide con ningún servicio conocido: excluido");
+            return false;
+        }).ToList();
+
+        Console.WriteLine($"[DetalleIncidente] Total expertos filtrados: {expertosServicio.Count}");
+        return expertosServicio;
     }
 
     private async Task AsignarIncidente()
